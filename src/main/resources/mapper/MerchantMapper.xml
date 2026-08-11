@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.MerchantMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.Merchant">
+        <id column="id" property="id"/>
+        <result column="merchant_no" property="merchantNo"/>
+        <result column="merchant_name" property="merchantName"/>
+        <result column="phone" property="phone"/>
+        <result column="alipay_account" property="alipayAccount"/>
+        <result column="password" property="password"/>
+        <result column="salt" property="salt"/>
+        <result column="referral_code" property="referralCode"/>
+        <result column="parent_referral" property="parentReferral"/>
+        <result column="status" property="status"/>
+        <result column="login_lock_until" property="loginLockUntil"/>
+        <result column="login_fail_count" property="loginFailCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, merchant_no, merchant_name, phone, alipay_account, password, salt,
+        referral_code, parent_referral, status, login_lock_until, login_fail_count,
+        created_at, updated_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="merchantNo != null and merchantNo != ''">
+                AND merchant_no = #{merchantNo}
+            </if>
+            <if test="merchantName != null and merchantName != ''">
+                AND merchant_name LIKE CONCAT('%', #{merchantName}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone = #{phone}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="referralCode != null and referralCode != ''">
+                AND referral_code = #{referralCode}
+            </if>
+            <if test="parentReferral != null and parentReferral != ''">
+                AND parent_referral = #{parentReferral}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_merchant
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByMerchantNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_merchant
+        WHERE merchant_no = #{merchantNo}
+    </select>
+
+    <select id="selectByPhone" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_merchant
+        WHERE phone = #{phone}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE t_merchant
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLoginFail">
+        UPDATE t_merchant
+        SET login_fail_count = login_fail_count + 1,
+            login_lock_until = #{loginLockUntil},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="resetLoginFail">
+        UPDATE t_merchant
+        SET login_fail_count = 0,
+            login_lock_until = NULL,
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

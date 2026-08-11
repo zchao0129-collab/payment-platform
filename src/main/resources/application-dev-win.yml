@@ -1,0 +1,106 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: payment-platform
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://8.149.135.251:3306/payment_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: payment_platform
+    password: xaKdBBGxNSprBrzw
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 30000
+
+  data:
+    redis:
+      host: 8.149.135.251
+      port: 6379
+      password: Czckiss!@#
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
+
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+# JWT
+jwt:
+  secret: payment-platform-secret-key-must-be-at-least-256-bits-long-for-hs256
+  access-token-expire: 86400
+  refresh-token-expire: 604800
+
+# 收银台前端地址（用于码牌 URL 生成）
+app:
+  cashier-base-url: https://qrpay.csmmkj.cn
+
+file:
+  upload-path: /home/data/payment-platform/upload   # Linux
+  #upload-path: D:/project/payment-platform/uploadPath     # Windows
+
+# Knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: default
+      paths-to-match: /**
+      packages-to-scan: com.payment.platform.controller
+
+# 支付宝配置
+alipay:
+  gateway: https://openapi.alipay.com/gateway.do
+  # 支付宝异步通知可达的公网地址（用于 notify_url）
+  notify-base-url: https://qrpay.csmmkj.cn
+  # 签名类型
+  sign-type: RSA2
+
+# 短信 (placeholder)
+sms:
+  provider: aliyun
+  aliyun:
+    access-key-id:
+    access-key-secret:
+    sign-name: 支付商户平台
+
+
+#│  角色   │   手机号    │    密码    │
+#├────────┼─────────────┼────────────┤
+#│ 管理员  │ 13800000000 │ admin123   │
+#├────────┼─────────────┼────────────┤
+#│ 商户    │ 13800138002 │ NewPass123 │

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.WithdrawalMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.Withdrawal">
+        <id column="id" property="id"/>
+        <result column="withdrawal_no" property="withdrawalNo"/>
+        <result column="merchant_id" property="merchantId"/>
+        <result column="merchant_no" property="merchantNo"/>
+        <result column="amount" property="amount"/>
+        <result column="alipay_account" property="alipayAccount"/>
+        <result column="status" property="status"/>
+        <result column="audit_user_id" property="auditUserId"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="payment_proof" property="paymentProof"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, withdrawal_no, merchant_id, merchant_no, amount, alipay_account,
+        status, audit_user_id, audit_time, reject_reason, payment_proof,
+        created_at, updated_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="withdrawalNo != null and withdrawalNo != ''">
+                AND withdrawal_no = #{withdrawalNo}
+            </if>
+            <if test="merchantId != null">
+                AND merchant_id = #{merchantId}
+            </if>
+            <if test="merchantNo != null and merchantNo != ''">
+                AND merchant_no = #{merchantNo}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="startTime != null">
+                AND created_at >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND created_at &lt;= #{endTime}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_withdrawal
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByWithdrawalNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_withdrawal
+        WHERE withdrawal_no = #{withdrawalNo}
+    </select>
+
+    <select id="selectByMerchantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_withdrawal
+        WHERE merchant_id = #{merchantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectPendingAudit" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_withdrawal
+        WHERE status = 1
+        ORDER BY created_at ASC
+    </select>
+
+    <select id="sumWithdrawnByMerchantId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM t_withdrawal
+        WHERE merchant_id = #{merchantId}
+          AND status = 2
+    </select>
+
+    <update id="auditPass">
+        UPDATE t_withdrawal
+        SET status = 2,
+            audit_user_id = #{auditUserId},
+            audit_time = NOW(),
+            payment_proof = #{paymentProof},
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND status = 1
+    </update>
+
+    <update id="auditReject">
+        UPDATE t_withdrawal
+        SET status = 3,
+            audit_user_id = #{auditUserId},
+            audit_time = NOW(),
+            reject_reason = #{rejectReason},
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND status = 1
+    </update>
+
+</mapper>

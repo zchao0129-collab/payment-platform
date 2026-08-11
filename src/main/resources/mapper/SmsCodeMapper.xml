@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.SmsCodeMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.SmsCode">
+        <id column="id" property="id"/>
+        <result column="phone" property="phone"/>
+        <result column="code" property="code"/>
+        <result column="scene" property="scene"/>
+        <result column="ip" property="ip"/>
+        <result column="is_used" property="isUsed"/>
+        <result column="verify_fail" property="verifyFail"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, phone, code, scene, ip, is_used, verify_fail, expire_time, created_at
+    </sql>
+
+    <select id="selectLatestValid" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_sms_code
+        WHERE phone = #{phone}
+          AND scene = #{scene}
+          AND is_used = 0
+          AND expire_time > NOW()
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="countTodayByPhone">
+        SELECT COUNT(*)
+        FROM t_sms_code
+        WHERE phone = #{phone}
+          AND DATE(created_at) = CURDATE()
+    </select>
+
+    <select id="countTodayByIp">
+        SELECT COUNT(*)
+        FROM t_sms_code
+        WHERE ip = #{ip}
+          AND DATE(created_at) = CURDATE()
+    </select>
+
+    <update id="markUsed">
+        UPDATE t_sms_code
+        SET is_used = 1
+        WHERE id = #{id}
+    </update>
+
+    <update id="incrementVerifyFail">
+        UPDATE t_sms_code
+        SET verify_fail = verify_fail + 1
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteExpired">
+        DELETE FROM t_sms_code
+        WHERE expire_time &lt; NOW()
+    </delete>
+
+</mapper>
