@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.CommConfigMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.CommissionConfig">
+        <id column="id" property="id"/>
+        <result column="min_amount" property="minAmount"/>
+        <result column="max_amount" property="maxAmount"/>
+        <result column="comm_rate" property="commRate"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, min_amount, max_amount, comm_rate, sort_order, status, created_at, updated_at
+    </sql>
+
+    <select id="selectEnabled" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_commission_config
+        WHERE status = 1
+        ORDER BY sort_order ASC
+    </select>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_commission_config
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY sort_order ASC
+    </select>
+
+    <!-- 根据订单金额匹配返佣比例 -->
+    <select id="selectByOrderAmount" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_commission_config
+        WHERE status = 1
+          AND min_amount &lt;= #{orderAmount}
+          AND (max_amount IS NULL OR max_amount >= #{orderAmount})
+        ORDER BY sort_order ASC
+        LIMIT 1
+    </select>
+
+    <update id="updateStatus">
+        UPDATE t_commission_config
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

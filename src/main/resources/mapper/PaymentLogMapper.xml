@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.PaymentLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.PaymentLog">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="alipay_trade_no" property="alipayTradeNo"/>
+        <result column="notify_content" property="notifyContent"/>
+        <result column="notify_status" property="notifyStatus"/>
+        <result column="error_msg" property="errorMsg"/>
+        <result column="process_time_ms" property="processTimeMs"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, order_id, order_no, alipay_trade_no, notify_content, notify_status,
+        error_msg, process_time_ms, created_at
+    </sql>
+
+    <select id="selectByOrderId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_payment_log
+        WHERE order_id = #{orderId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByOrderNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_payment_log
+        WHERE order_no = #{orderNo}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_payment_log
+        <where>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                AND order_no = #{orderNo}
+            </if>
+            <if test="notifyStatus != null">
+                AND notify_status = #{notifyStatus}
+            </if>
+            <if test="startTime != null">
+                AND created_at >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND created_at &lt;= #{endTime}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

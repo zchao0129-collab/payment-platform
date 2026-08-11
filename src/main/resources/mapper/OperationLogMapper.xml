@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.OperationLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.OperationLog">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="op_type" property="opType"/>
+        <result column="op_target" property="opTarget"/>
+        <result column="op_detail" property="opDetail"/>
+        <result column="ip" property="ip"/>
+        <result column="user_agent" property="userAgent"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, username, op_type, op_target, op_detail, ip, user_agent, created_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="username != null and username != ''">
+                AND username = #{username}
+            </if>
+            <if test="opType != null and opType != ''">
+                AND op_type = #{opType}
+            </if>
+            <if test="opTarget != null and opTarget != ''">
+                AND op_target = #{opTarget}
+            </if>
+            <if test="startTime != null">
+                AND created_at >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND created_at &lt;= #{endTime}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_operation_log
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_operation_log
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByOpType" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_operation_log
+        WHERE op_type = #{opType}
+        ORDER BY created_at DESC
+    </select>
+
+    <delete id="deleteBeforeDate">
+        DELETE FROM t_operation_log
+        WHERE created_at &lt; #{beforeDate}
+    </delete>
+
+</mapper>

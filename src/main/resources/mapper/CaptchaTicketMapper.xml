@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.CaptchaTicketMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.CaptchaTicket">
+        <id column="id" property="id"/>
+        <result column="ticket" property="ticket"/>
+        <result column="scene" property="scene"/>
+        <result column="is_used" property="isUsed"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, ticket, scene, is_used, expire_time, created_at
+    </sql>
+
+    <select id="selectValidByTicket" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_captcha_ticket
+        WHERE ticket = #{ticket}
+          AND is_used = 0
+          AND expire_time > NOW()
+    </select>
+
+    <update id="markUsed">
+        UPDATE t_captcha_ticket
+        SET is_used = 1
+        WHERE ticket = #{ticket}
+    </update>
+
+    <delete id="deleteExpired">
+        DELETE FROM t_captcha_ticket
+        WHERE expire_time &lt; NOW()
+    </delete>
+
+</mapper>

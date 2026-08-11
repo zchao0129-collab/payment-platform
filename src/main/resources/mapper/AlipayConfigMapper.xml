@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.AlipayConfigMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.AlipayConfig">
+        <id column="id" property="id"/>
+        <result column="config_name" property="configName"/>
+        <result column="config_type" property="configType"/>
+        <result column="app_id" property="appId"/>
+        <result column="uid" property="uid"/>
+        <result column="private_key" property="privateKey"/>
+        <result column="alipay_public_key" property="alipayPublicKey"/>
+        <result column="app_public_key" property="appPublicKey"/>
+        <result column="app_cert_path" property="appCertPath"/>
+        <result column="root_cert_path" property="rootCertPath"/>
+        <result column="public_cert_path" property="publicCertPath"/>
+        <result column="status" property="status"/>
+        <result column="weight" property="weight"/>
+        <result column="last_test_time" property="lastTestTime"/>
+        <result column="last_test_result" property="lastTestResult"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, config_name, config_type, app_id, uid, private_key, alipay_public_key,
+        app_public_key, app_cert_path, root_cert_path, public_cert_path,
+        status, weight, last_test_time, last_test_result, created_at, updated_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="configName != null and configName != ''">
+                AND config_name LIKE CONCAT('%', #{configName}, '%')
+            </if>
+            <if test="configType != null">
+                AND config_type = #{configType}
+            </if>
+            <if test="appId != null and appId != ''">
+                AND app_id = #{appId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_alipay_config
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectEnabled" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_alipay_config
+        WHERE status = 1
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByAppId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_alipay_config
+        WHERE app_id = #{appId}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE t_alipay_config
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTestResult">
+        UPDATE t_alipay_config
+        SET last_test_time = NOW(),
+            last_test_result = #{lastTestResult},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="disableAll">
+        UPDATE t_alipay_config
+        SET status = 2, updated_at = NOW()
+        WHERE status = 1
+    </update>
+
+</mapper>

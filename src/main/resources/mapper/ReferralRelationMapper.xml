@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.ReferralRelationMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.ReferralRelation">
+        <id column="id" property="id"/>
+        <result column="parent_merchant_id" property="parentMerchantId"/>
+        <result column="child_merchant_id" property="childMerchantId"/>
+        <result column="child_merchant_no" property="childMerchantNo"/>
+        <result column="level" property="level"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, parent_merchant_id, child_merchant_id, child_merchant_no, level, created_at
+    </sql>
+
+    <select id="selectByParentId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_referral_relation
+        WHERE parent_merchant_id = #{parentMerchantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByChildId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_referral_relation
+        WHERE child_merchant_id = #{childMerchantId}
+    </select>
+
+    <select id="selectDirectChildren" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_referral_relation
+        WHERE parent_merchant_id = #{parentMerchantId}
+          AND level = 1
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="countByParentId">
+        SELECT COUNT(*)
+        FROM t_referral_relation
+        WHERE parent_merchant_id = #{parentMerchantId}
+    </select>
+
+    <select id="selectChildrenByLevel" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_referral_relation
+        WHERE parent_merchant_id = #{parentMerchantId}
+          AND level = #{level}
+        ORDER BY created_at DESC
+    </select>
+
+    <delete id="deleteByChildId">
+        DELETE FROM t_referral_relation
+        WHERE child_merchant_id = #{childMerchantId}
+    </delete>
+
+</mapper>

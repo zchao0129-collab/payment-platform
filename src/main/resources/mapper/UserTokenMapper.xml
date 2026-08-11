@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.UserTokenMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.UserToken">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="access_token" property="accessToken"/>
+        <result column="refresh_token" property="refreshToken"/>
+        <result column="access_expire" property="accessExpire"/>
+        <result column="refresh_expire" property="refreshExpire"/>
+        <result column="login_ip" property="loginIp"/>
+        <result column="device_info" property="deviceInfo"/>
+        <result column="is_logout" property="isLogout"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, access_token, refresh_token, access_expire, refresh_expire,
+        login_ip, device_info, is_logout, created_at, updated_at
+    </sql>
+
+    <select id="selectByAccessToken" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_user_token
+        WHERE access_token = #{accessToken}
+    </select>
+
+    <select id="selectByRefreshToken" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_user_token
+        WHERE refresh_token = #{refreshToken}
+    </select>
+
+    <select id="selectValidByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_user_token
+        WHERE user_id = #{userId}
+          AND is_logout = 0
+          AND refresh_expire > NOW()
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="logoutByUserId">
+        UPDATE t_user_token
+        SET is_logout = 1, updated_at = NOW()
+        WHERE user_id = #{userId} AND is_logout = 0
+    </update>
+
+    <update id="logoutByAccessToken">
+        UPDATE t_user_token
+        SET is_logout = 1, updated_at = NOW()
+        WHERE access_token = #{accessToken}
+    </update>
+
+    <delete id="deleteExpired">
+        DELETE FROM t_user_token
+        WHERE refresh_expire &lt; NOW()
+    </delete>
+
+</mapper>

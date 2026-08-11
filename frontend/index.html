@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>支付商户管理平台</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      // Catch any early JS errors
+      window.onerror = function(msg, url, line, col, err) {
+        var el = document.createElement('div')
+        el.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff4d4f;color:#fff;padding:16px 24px;z-index:99999;font-size:14px;font-family:monospace;white-space:pre-wrap;max-height:40vh;overflow-y:auto;'
+        el.textContent = 'JS Error: ' + msg + '\nAt: ' + url + ':' + line + ':' + col + '\n\n' + (err && err.stack || '')
+        document.body.appendChild(el)
+      }
+      window.addEventListener('unhandledrejection', function(e) {
+        var el = document.createElement('div')
+        el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#faad14;color:#000;padding:16px 24px;z-index:99999;font-size:14px;font-family:monospace;white-space:pre-wrap;max-height:40vh;overflow-y:auto;'
+        el.textContent = 'Unhandled Promise: ' + (e.reason && e.reason.message || e.reason)
+        document.body.appendChild(el)
+      })
+    </script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

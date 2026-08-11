@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.OrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.Order">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="merchant_id" property="merchantId"/>
+        <result column="merchant_no" property="merchantNo"/>
+        <result column="product_name" property="productName"/>
+        <result column="order_amount" property="orderAmount"/>
+        <result column="order_status" property="orderStatus"/>
+        <result column="alipay_trade_no" property="alipayTradeNo"/>
+        <result column="pay_time" property="payTime"/>
+        <result column="callback_time" property="callbackTime"/>
+        <result column="refund_time" property="refundTime"/>
+        <result column="refund_amount" property="refundAmount"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="fail_reason" property="failReason"/>
+        <result column="qrcode_id" property="qrcodeId"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, order_no, merchant_id, merchant_no, product_name, order_amount,
+        order_status, alipay_trade_no, pay_time, callback_time, refund_time,
+        refund_amount, expire_time, fail_reason, qrcode_id, remark,
+        created_at, updated_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="orderNo != null and orderNo != ''">
+                AND order_no = #{orderNo}
+            </if>
+            <if test="merchantId != null">
+                AND merchant_id = #{merchantId}
+            </if>
+            <if test="merchantNo != null and merchantNo != ''">
+                AND merchant_no = #{merchantNo}
+            </if>
+            <if test="orderStatus != null">
+                AND order_status = #{orderStatus}
+            </if>
+            <if test="alipayTradeNo != null and alipayTradeNo != ''">
+                AND alipay_trade_no = #{alipayTradeNo}
+            </if>
+            <if test="qrcodeId != null">
+                AND qrcode_id = #{qrcodeId}
+            </if>
+            <if test="startTime != null">
+                AND created_at >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND created_at &lt;= #{endTime}
+            </if>
+            <if test="productName != null and productName != ''">
+                AND product_name LIKE CONCAT('%', #{productName}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_order
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByOrderNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_order
+        WHERE order_no = #{orderNo}
+    </select>
+
+    <select id="selectByMerchantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_order
+        WHERE merchant_id = #{merchantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectExpiredOrders" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_order
+        WHERE order_status = 1
+          AND expire_time &lt; NOW()
+    </select>
+
+    <select id="sumAmountByMerchantAndStatus" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(order_amount), 0)
+        FROM t_order
+        WHERE merchant_id = #{merchantId}
+        <if test="orderStatus != null">
+            AND order_status = #{orderStatus}
+        </if>
+    </select>
+
+    <update id="updateStatus">
+        UPDATE t_order
+        SET order_status = #{orderStatus},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateToPaid">
+        UPDATE t_order
+        SET order_status = 2,
+            alipay_trade_no = #{alipayTradeNo},
+            pay_time = NOW(),
+            updated_at = NOW()
+        WHERE order_no = #{orderNo}
+          AND order_status = 1
+    </update>
+
+    <update id="updateToCallback">
+        UPDATE t_order
+        SET order_status = 3,
+            callback_time = NOW(),
+            updated_at = NOW()
+        WHERE order_no = #{orderNo}
+          AND order_status = 2
+    </update>
+
+    <update id="updateToRefund">
+        UPDATE t_order
+        SET order_status = 4,
+            refund_time = NOW(),
+            refund_amount = #{refundAmount},
+            updated_at = NOW()
+        WHERE order_no = #{orderNo}
+    </update>
+
+    <update id="updateToExpired">
+        UPDATE t_order
+        SET order_status = 5,
+            fail_reason = '订单已过期',
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND order_status = 1
+    </update>
+
+    <update id="updateToFailed">
+        UPDATE t_order
+        SET order_status = 6,
+            fail_reason = #{failReason},
+            updated_at = NOW()
+        WHERE order_no = #{orderNo}
+    </update>
+
+</mapper>

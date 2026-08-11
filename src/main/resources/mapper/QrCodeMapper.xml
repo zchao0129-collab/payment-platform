@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.QrCodeMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.Qrcode">
+        <id column="id" property="id"/>
+        <result column="qrcode_no" property="qrcodeNo"/>
+        <result column="merchant_id" property="merchantId"/>
+        <result column="merchant_no" property="merchantNo"/>
+        <result column="alipay_config_id" property="alipayConfigId"/>
+        <result column="qrcode_data" property="qrcodeData"/>
+        <result column="qrcode_image" property="qrcodeImage"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, qrcode_no, merchant_id, merchant_no, alipay_config_id, qrcode_data,
+        qrcode_image, status, remark, created_at, updated_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="qrcodeNo != null and qrcodeNo != ''">
+                AND qrcode_no = #{qrcodeNo}
+            </if>
+            <if test="merchantId != null">
+                AND merchant_id = #{merchantId}
+            </if>
+            <if test="merchantNo != null and merchantNo != ''">
+                AND merchant_no = #{merchantNo}
+            </if>
+            <if test="alipayConfigId != null">
+                AND alipay_config_id = #{alipayConfigId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_qrcode
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByQrcodeNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_qrcode
+        WHERE qrcode_no = #{qrcodeNo}
+    </select>
+
+    <select id="selectByMerchantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_qrcode
+        WHERE merchant_id = #{merchantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectActiveByMerchantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_qrcode
+        WHERE merchant_id = #{merchantId}
+          AND status = 1
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="countByMerchantId">
+        SELECT COUNT(*)
+        FROM t_qrcode
+        WHERE merchant_id = #{merchantId}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE t_qrcode
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="disableByMerchantId">
+        UPDATE t_qrcode
+        SET status = 2, updated_at = NOW()
+        WHERE merchant_id = #{merchantId}
+          AND status = 1
+    </update>
+
+</mapper>

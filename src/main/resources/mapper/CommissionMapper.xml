@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.CommissionMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.Commission">
+        <id column="id" property="id"/>
+        <result column="commission_no" property="commissionNo"/>
+        <result column="merchant_id" property="merchantId"/>
+        <result column="order_id" property="orderId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="order_amount" property="orderAmount"/>
+        <result column="comm_rate" property="commRate"/>
+        <result column="comm_amount" property="commAmount"/>
+        <result column="withdraw_status" property="withdrawStatus"/>
+        <result column="withdrawal_id" property="withdrawalId"/>
+        <result column="settle_date" property="settleDate"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, commission_no, merchant_id, order_id, order_no, order_amount,
+        comm_rate, comm_amount, withdraw_status, withdrawal_id, settle_date,
+        created_at, updated_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="commissionNo != null and commissionNo != ''">
+                AND commission_no = #{commissionNo}
+            </if>
+            <if test="merchantId != null">
+                AND merchant_id = #{merchantId}
+            </if>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                AND order_no = #{orderNo}
+            </if>
+            <if test="withdrawStatus != null">
+                AND withdraw_status = #{withdrawStatus}
+            </if>
+            <if test="withdrawalId != null">
+                AND withdrawal_id = #{withdrawalId}
+            </if>
+            <if test="settleDate != null">
+                AND settle_date = #{settleDate}
+            </if>
+            <if test="startDate != null">
+                AND settle_date >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND settle_date &lt;= #{endDate}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_commission
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByMerchantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_commission
+        WHERE merchant_id = #{merchantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectUnsettledByMerchantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_commission
+        WHERE merchant_id = #{merchantId}
+          AND withdraw_status = 1
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="sumUnsettledByMerchantId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(comm_amount), 0)
+        FROM t_commission
+        WHERE merchant_id = #{merchantId}
+          AND withdraw_status = 1
+    </select>
+
+    <select id="sumCommissionByDateRange" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(comm_amount), 0)
+        FROM t_commission
+        WHERE merchant_id = #{merchantId}
+        <if test="startDate != null">
+            AND settle_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND settle_date &lt;= #{endDate}
+        </if>
+    </select>
+
+    <update id="updateWithdrawStatus">
+        UPDATE t_commission
+        SET withdraw_status = #{withdrawStatus},
+            withdrawal_id = #{withdrawalId},
+            updated_at = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateWithdrawStatusByWithdrawalId">
+        UPDATE t_commission
+        SET withdraw_status = #{withdrawStatus},
+            updated_at = NOW()
+        WHERE withdrawal_id = #{withdrawalId}
+    </update>
+
+</mapper>
