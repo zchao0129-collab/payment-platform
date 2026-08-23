@@ -1,0 +1,55 @@
+# 支付管理平台前端（管理端 + 商户 PC + 收银台 H5）— Nginx 配置示例
+# 请将 server_name / root / proxy_pass 替换为实际的域名、目录与后端地址
+
+server {
+    listen       80;
+    server_name  qrpay.csmmkj.cn;            # 前端实际域名（收银台二维码指向此域名）
+
+    charset utf-8;
+    client_max_body_size 10m;
+
+    # ============ 前端 SPA ============
+    location / {
+        root   /data/payment-platform/dist;  # 指向部署包解压后的 html 目录
+        index  index.html;
+        try_files $uri $uri/ /index.html;    # Vue Router history 模式（必须）
+    }
+
+    # ============ 后端 API 反向代理（前端用相对 /api，同域无需 CORS） ============
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # ============ API 文档（内网可关闭） ============
+    location /doc.html {
+        proxy_pass http://127.0.0.1:8080;
+    }
+    location /swagger-ui/ {
+        proxy_pass http://127.0.0.1:8080;
+    }
+    location /v3/api-docs {
+        proxy_pass http://127.0.0.1:8080;
+    }
+
+    # ============ 静态资源缓存 ============
+    location /assets/ {
+        root /data/payment-platform/dist;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # ============ 安全头 ============
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+
+# 说明：
+# 1. 前端接口地址为相对 /api，经 location /api/ 反代到后端，同域部署，无需 CORS。
+# 2. 必须部署在域名根路径：index.html 中 JS/CSS 用绝对路径 /assets/... 引用。
+# 3. 若后端在另一台服务器，把 proxy_pass 的 127.0.0.1:8080 换成后端内网地址即可。

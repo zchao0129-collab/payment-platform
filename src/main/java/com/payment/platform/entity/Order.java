@@ -25,7 +25,13 @@ public class Order {
     /** 状态: 1-新建, 2-已支付, 3-已回调, 4-已退款, 5-已失效, 6-支付失败 */
     private Integer orderStatus;
 
+    /** 支付通道: ALIPAY, WECHAT */
+    private String payChannel;
+
     private String alipayTradeNo;
+
+    /** 通道交易号 (支付宝/微信通用) */
+    private String channelTradeNo;
 
     private LocalDateTime payTime;
 
@@ -42,6 +48,21 @@ public class Order {
     private Long qrcodeId;
 
     private String remark;
+
+    /** 本单回调地址(空则用商户默认) */
+    private String notifyUrl;
+
+    /** 支付完成跳转地址(创建订单时填写) */
+    private String returnUrl;
+
+    /** 回调状态: 0-未通知, 1-成功, 2-失败待重试 */
+    private Integer notifyStatus;
+
+    /** 回调重试次数 */
+    private Integer notifyCount;
+
+    /** 最近回调时间 */
+    private LocalDateTime notifyTime;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

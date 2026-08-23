@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS t_merchant (
     merchant_name   VARCHAR(64)     DEFAULT ''  COMMENT '商户名称',
     phone           VARCHAR(20)     NOT NULL    COMMENT '手机号',
     alipay_account  VARCHAR(64)     DEFAULT ''  COMMENT '支付宝账号',
+    real_name       VARCHAR(50)     DEFAULT ''  COMMENT '真实姓名',
+    id_card_no      VARCHAR(18)     DEFAULT ''  COMMENT '身份证号码',
     password        VARCHAR(255)    NOT NULL    COMMENT '密码(BCrypt)',
     salt            VARCHAR(32)     DEFAULT ''  COMMENT '盐(保留)',
     referral_code   VARCHAR(16)     NOT NULL    COMMENT '推荐码',
@@ -22,6 +24,11 @@ CREATE TABLE IF NOT EXISTS t_merchant (
     status          TINYINT         DEFAULT 1   COMMENT '状态: 1-正常, 2-停用',
     login_lock_until DATETIME      NULL        COMMENT '登录锁定至',
     login_fail_count INT            DEFAULT 0   COMMENT '登录失败次数',
+    api_secret      VARCHAR(64)     DEFAULT ''  COMMENT 'API签名密钥(HMAC-SHA256)',
+    notify_url      VARCHAR(256)    DEFAULT ''  COMMENT '支付回调地址',
+    api_enabled     TINYINT         DEFAULT 0   COMMENT '是否开通开放API: 0-未开通, 1-已开通',
+    ip_whitelist    VARCHAR(512)    DEFAULT ''  COMMENT '调用IP白名单, 逗号分隔, 空=不限',
+    api_secret_updated_at DATETIME  NULL        COMMENT 'API密钥更新时间',
     created_at      DATETIME        DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_merchant_no (merchant_no),
@@ -100,7 +107,9 @@ CREATE TABLE IF NOT EXISTS t_order (
     product_name    VARCHAR(128)    DEFAULT ''  COMMENT '商品名称',
     order_amount    DECIMAL(12,2)   NOT NULL    COMMENT '订单金额',
     order_status    TINYINT         DEFAULT 1   COMMENT '状态: 1-新建, 2-已支付, 3-已回调, 4-已退款, 5-已失效, 6-支付失败',
+    pay_channel     VARCHAR(16)     DEFAULT 'ALIPAY' COMMENT '支付通道: ALIPAY, WECHAT',
     alipay_trade_no VARCHAR(64)     DEFAULT ''  COMMENT '支付宝交易号',
+    channel_trade_no VARCHAR(64)    DEFAULT ''  COMMENT '通道交易号(微信/支付宝通用)',
     pay_time        DATETIME        NULL        COMMENT '支付时间',
     callback_time   DATETIME        NULL        COMMENT '回调时间',
     refund_time     DATETIME        NULL        COMMENT '退款时间',
@@ -109,6 +118,11 @@ CREATE TABLE IF NOT EXISTS t_order (
     fail_reason     VARCHAR(256)    DEFAULT ''  COMMENT '失败原因',
     qrcode_id       BIGINT          NULL        COMMENT '码牌ID',
     remark          VARCHAR(256)    DEFAULT ''  COMMENT '备注',
+    notify_url      VARCHAR(256)    DEFAULT ''  COMMENT '本单回调地址(空则用商户默认)',
+    return_url      VARCHAR(256)    DEFAULT ''  COMMENT '支付完成跳转地址',
+    notify_status   TINYINT         DEFAULT 0   COMMENT '回调状态: 0-未通知, 1-成功, 2-失败待重试',
+    notify_count    INT             DEFAULT 0   COMMENT '回调重试次数',
+    notify_time     DATETIME        NULL        COMMENT '最近回调时间',
     created_at      DATETIME        DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_order_no (order_no),
@@ -207,6 +221,23 @@ CREATE TABLE IF NOT EXISTS t_alipay_config (
     created_at      DATETIME        DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='支付宝配置表';
+
+-- 微信支付配置表
+CREATE TABLE IF NOT EXISTS t_wechat_config (
+    id              BIGINT          AUTO_INCREMENT PRIMARY KEY,
+    config_name     VARCHAR(64)     NOT NULL    COMMENT '配置名称',
+    app_id          VARCHAR(32)     NOT NULL    COMMENT '微信公众号/小程序AppId',
+    mch_id          VARCHAR(32)     NOT NULL    COMMENT '商户号',
+    api_v3_key      VARCHAR(64)     NOT NULL    COMMENT 'APIv3密钥',
+    serial_no       VARCHAR(64)     NOT NULL    COMMENT '商户证书序列号',
+    private_key     TEXT            NOT NULL    COMMENT '商户私钥(PEM格式)',
+    status          TINYINT         DEFAULT 2   COMMENT '状态: 1-启用, 2-停用',
+    weight          INT             DEFAULT 100 COMMENT '权重: 流量分配比例，0=不使用',
+    last_test_time  DATETIME        NULL        COMMENT '最后测试时间',
+    last_test_result TINYINT        NULL        COMMENT '最后测试结果: 1-成功, 2-失败',
+    created_at      DATETIME        DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='微信支付配置表';
 
 -- 返佣配置表
 CREATE TABLE IF NOT EXISTS t_commission_config (

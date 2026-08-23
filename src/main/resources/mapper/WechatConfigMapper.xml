@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.payment.platform.mapper.WechatConfigMapper">
+
+    <resultMap id="BaseResultMap" type="com.payment.platform.entity.WechatConfig">
+        <id column="id" property="id"/>
+        <result column="config_name" property="configName"/>
+        <result column="app_id" property="appId"/>
+        <result column="mch_id" property="mchId"/>
+        <result column="api_v3_key" property="apiV3Key"/>
+        <result column="serial_no" property="serialNo"/>
+        <result column="private_key" property="privateKey"/>
+        <result column="status" property="status"/>
+        <result column="weight" property="weight"/>
+        <result column="last_test_time" property="lastTestTime"/>
+        <result column="last_test_result" property="lastTestResult"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, config_name, app_id, mch_id, api_v3_key, serial_no, private_key,
+        status, weight, last_test_time, last_test_result, created_at, updated_at
+    </sql>
+
+    <sql id="Where_Condition">
+        <where>
+            <if test="configName != null and configName != ''">
+                AND config_name LIKE CONCAT('%', #{configName}, '%')
+            </if>
+            <if test="appId != null and appId != ''">
+                AND app_id = #{appId}
+            </if>
+            <if test="mchId != null and mchId != ''">
+                AND mch_id = #{mchId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_wechat_config
+        <include refid="Where_Condition"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectEnabled" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_wechat_config
+        WHERE status = 1
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByAppId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_wechat_config
+        WHERE app_id = #{appId}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE t_wechat_config
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTestResult">
+        UPDATE t_wechat_config
+        SET last_test_time = NOW(),
+            last_test_result = #{lastTestResult},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="disableAll">
+        UPDATE t_wechat_config
+        SET status = 2, updated_at = NOW()
+        WHERE status = 1
+    </update>
+
+</mapper>

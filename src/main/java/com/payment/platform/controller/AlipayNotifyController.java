@@ -5,6 +5,7 @@ import com.payment.platform.entity.Order;
 import com.payment.platform.enums.OrderStatusEnum;
 import com.payment.platform.mapper.OrderMapper;
 import com.payment.platform.service.AlipayPaymentService;
+import com.payment.platform.service.NotifyCallbackService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +34,7 @@ public class AlipayNotifyController {
 
     private final AlipayPaymentService alipayPaymentService;
     private final OrderMapper orderMapper;
+    private final NotifyCallbackService notifyCallbackService;
 
     @Value("${app.cashier-base-url}")
     private String cashierBaseUrl;
@@ -141,6 +143,9 @@ public class AlipayNotifyController {
                         .set(Order::getOrderStatus, OrderStatusEnum.PAID.getCode())
                         .set(Order::getAlipayTradeNo, tradeNo)
                         .set(Order::getPayTime, LocalDateTime.now()));
+
+        // 推送商户回调
+        notifyCallbackService.notifyPaid(orderNo);
 
         log.info("订单支付成功: orderNo={}, tradeNo={}", orderNo, tradeNo);
     }

@@ -9,6 +9,8 @@
         <result column="merchant_name" property="merchantName"/>
         <result column="phone" property="phone"/>
         <result column="alipay_account" property="alipayAccount"/>
+        <result column="real_name" property="realName"/>
+        <result column="id_card_no" property="idCardNo"/>
         <result column="password" property="password"/>
         <result column="salt" property="salt"/>
         <result column="referral_code" property="referralCode"/>
@@ -16,13 +18,19 @@
         <result column="status" property="status"/>
         <result column="login_lock_until" property="loginLockUntil"/>
         <result column="login_fail_count" property="loginFailCount"/>
+        <result column="api_secret" property="apiSecret"/>
+        <result column="notify_url" property="notifyUrl"/>
+        <result column="api_enabled" property="apiEnabled"/>
+        <result column="ip_whitelist" property="ipWhitelist"/>
+        <result column="api_secret_updated_at" property="apiSecretUpdatedAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, merchant_no, merchant_name, phone, alipay_account, password, salt,
+        id, merchant_no, merchant_name, phone, alipay_account, real_name, id_card_no, password, salt,
         referral_code, parent_referral, status, login_lock_until, login_fail_count,
+        api_secret, notify_url, api_enabled, ip_whitelist, api_secret_updated_at,
         created_at, updated_at
     </sql>
 

@@ -44,6 +44,11 @@ nbdist/
 *.xml.versionsBackup
 *.swp
 
+# 构建/部署产物（不入库）
+*.zip
+*.docx
+frontend/部署包_staging/
+
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml

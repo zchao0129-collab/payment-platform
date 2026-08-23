@@ -21,6 +21,10 @@ public class Merchant {
 
     private String alipayAccount;
 
+    private String realName;
+
+    private String idCardNo;
+
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
@@ -36,6 +40,21 @@ public class Merchant {
     private LocalDateTime loginLockUntil;
 
     private Integer loginFailCount;
+
+    /** API签名密钥(MD5)，仅写入不序列化返回 */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String apiSecret;
+
+    /** 支付回调地址 */
+    private String notifyUrl;
+
+    /** 是否开通开放API: 0-未开通, 1-已开通 */
+    private Integer apiEnabled;
+
+    /** 调用IP白名单, 逗号分隔, 空=不限 */
+    private String ipWhitelist;
+
+    private LocalDateTime apiSecretUpdatedAt;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

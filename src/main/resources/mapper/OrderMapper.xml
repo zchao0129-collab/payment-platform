@@ -11,7 +11,9 @@
         <result column="product_name" property="productName"/>
         <result column="order_amount" property="orderAmount"/>
         <result column="order_status" property="orderStatus"/>
+        <result column="pay_channel" property="payChannel"/>
         <result column="alipay_trade_no" property="alipayTradeNo"/>
+        <result column="channel_trade_no" property="channelTradeNo"/>
         <result column="pay_time" property="payTime"/>
         <result column="callback_time" property="callbackTime"/>
         <result column="refund_time" property="refundTime"/>
@@ -20,14 +22,21 @@
         <result column="fail_reason" property="failReason"/>
         <result column="qrcode_id" property="qrcodeId"/>
         <result column="remark" property="remark"/>
+        <result column="notify_url" property="notifyUrl"/>
+        <result column="return_url" property="returnUrl"/>
+        <result column="notify_status" property="notifyStatus"/>
+        <result column="notify_count" property="notifyCount"/>
+        <result column="notify_time" property="notifyTime"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id, order_no, merchant_id, merchant_no, product_name, order_amount,
-        order_status, alipay_trade_no, pay_time, callback_time, refund_time,
+        order_status, pay_channel, alipay_trade_no, channel_trade_no,
+        pay_time, callback_time, refund_time,
         refund_amount, expire_time, fail_reason, qrcode_id, remark,
+        notify_url, return_url, notify_status, notify_count, notify_time,
         created_at, updated_at
     </sql>
 
@@ -109,7 +118,12 @@
     <update id="updateToPaid">
         UPDATE t_order
         SET order_status = 2,
+            <if test="alipayTradeNo != null and alipayTradeNo != ''">
             alipay_trade_no = #{alipayTradeNo},
+            </if>
+            <if test="channelTradeNo != null and channelTradeNo != ''">
+            channel_trade_no = #{channelTradeNo},
+            </if>
             pay_time = NOW(),
             updated_at = NOW()
         WHERE order_no = #{orderNo}

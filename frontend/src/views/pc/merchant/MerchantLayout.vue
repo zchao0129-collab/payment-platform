@@ -28,6 +28,13 @@
         </div>
         <div
           class="menu-item"
+          :class="{ active: currentRoute === 'withdrawal' }"
+          @click="navigate('withdrawal')"
+        >
+          <span class="icon">💸</span>提现明细
+        </div>
+        <div
+          class="menu-item"
           :class="{ active: currentRoute === 'qrcode' }"
           @click="navigate('qrcode')"
         >

@@ -50,6 +50,12 @@ const routes = [
         meta: { title: '佣金列表' },
       },
       {
+        path: 'withdrawal',
+        name: 'MerchantWithdrawal',
+        component: () => import('@/views/pc/merchant/WithdrawalPage.vue'),
+        meta: { title: '提现明细' },
+      },
+      {
         path: 'qrcode',
         name: 'MerchantQrcode',
         component: () => import('@/views/pc/merchant/QrcodePage.vue'),
@@ -99,6 +105,12 @@ const routes = [
         name: 'AdminAlipay',
         component: () => import('@/views/pc/admin/AlipayConfigPage.vue'),
         meta: { title: '支付宝配置' },
+      },
+      {
+        path: 'wechat',
+        name: 'AdminWechat',
+        component: () => import('@/views/pc/admin/WechatConfigPage.vue'),
+        meta: { title: '微信支付配置' },
       },
       {
         path: 'commconfig',

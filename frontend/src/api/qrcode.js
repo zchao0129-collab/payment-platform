@@ -14,3 +14,8 @@ export function regenerateQrcode() {
 export function getQrcodeInfo(merchantNo) {
   return request.get('/qrcode/info', { params: { merchantNo } })
 }
+
+/** 生成任意内容的二维码（返回 base64 data URI） */
+export function encodeQrcode(content) {
+  return request.get('/qrcode/encode', { params: { content } })
+}

@@ -44,6 +44,13 @@
         </div>
         <div
           class="menu-item"
+          :class="{ active: currentRoute === 'wechat' }"
+          @click="navigate('wechat')"
+        >
+          <span class="icon">💚</span>微信支付配置
+        </div>
+        <div
+          class="menu-item"
           :class="{ active: currentRoute === 'commconfig' }"
           @click="navigate('commconfig')"
         >

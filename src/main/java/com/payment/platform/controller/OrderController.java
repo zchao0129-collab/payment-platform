@@ -1,22 +1,31 @@
 package com.payment.platform.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.payment.platform.common.BusinessException;
 import com.payment.platform.common.PageResult;
 import com.payment.platform.common.Result;
+import com.payment.platform.common.utils.SignUtil;
+import com.payment.platform.dto.req.OpenOrderCreateReq;
 import com.payment.platform.dto.req.OrderQueryReq;
+import com.payment.platform.entity.Merchant;
 import com.payment.platform.entity.Order;
-import com.payment.platform.service.AlipayPaymentService;
+import com.payment.platform.mapper.MerchantMapper;
+import com.payment.platform.mapper.OrderMapper;
+import com.payment.platform.service.NotifyCallbackService;
+import com.payment.platform.service.OpenApiService;
 import com.payment.platform.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Tag(name = "订单", description = "订单管理")
@@ -26,12 +35,12 @@ import java.util.Map;
 public class OrderController {
 
     private final OrderService orderService;
-    private final AlipayPaymentService alipayPaymentService;
+    private final OrderMapper orderMapper;
+    private final MerchantMapper merchantMapper;
+    private final NotifyCallbackService notifyCallbackService;
+    private final OpenApiService openApiService;
 
-    @Value("${app.cashier-base-url}")
-    private String cashierBaseUrl;
-
-    @Operation(summary = "收银台创建订单（公开接口）— 创建本地订单并获取支付宝支付链接")
+    @Operation(summary = "收银台创建订单（公开接口）— 创建本地订单并获取支付参数")
     @PostMapping("/create")
     public Result<Map<String, Object>> create(@RequestBody Map<String, Object> params) {
         Long merchantId = Long.valueOf(params.get("merchantId").toString());
@@ -39,33 +48,26 @@ public class OrderController {
         BigDecimal amount = new BigDecimal(params.get("amount").toString());
         Long qrcodeId = params.get("qrcodeId") != null ? Long.valueOf(params.get("qrcodeId").toString()) : null;
         String remark = (String) params.getOrDefault("remark", "");
+        // 支付通道: ALIPAY 或 WECHAT（前端根据 UA 检测传入）
+        String payChannel = ((String) params.getOrDefault("payChannel", "ALIPAY")).toUpperCase();
+        String openid = (String) params.get("openid");
 
-        // 1. 创建本地订单
+        // 1. 创建本地订单（标记支付通道）
         Order order = orderService.createOrder(merchantId, productName, amount, qrcodeId, remark);
+        order.setPayChannel(payChannel);
+        orderMapper.updateById(order);
 
-        // 2. 构建支付宝回跳地址（先到后端处理，后端验证后重定向到前端结果页）
-        String returnUrl = cashierBaseUrl + "/api/alipay/return";
+        // 2. 按通道构建支付参数
+        Map<String, Object> result = orderService.buildPaymentParams(order, payChannel, openid, getClientIp());
 
-        // 3. 调用支付宝创建支付订单，获取支付表单（HTML 自动提交表单）
-        String alipayForm = "";
-        try {
-            Map<String, String> alipayResult = alipayPaymentService.buildWapPay(
-                    order.getOrderNo(), order.getOrderAmount(), order.getProductName(), returnUrl);
-            alipayForm = alipayResult.getOrDefault("alipayForm", "");
-        } catch (Exception e) {
-            log.error("创建支付宝支付订单失败: orderNo={}", order.getOrderNo(), e);
-            // 支付宝调用失败不阻塞订单创建，返回空表单由前端展示兜底页面
-        }
-
-        // 4. 返回结果
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("orderNo", order.getOrderNo());
-        result.put("amount", order.getOrderAmount().toString());
-        result.put("alipayForm", alipayForm);
-
-        log.info("订单创建完成: orderNo={}, amount={}, hasAlipayForm={}",
-                order.getOrderNo(), order.getOrderAmount(), !alipayForm.isEmpty());
+        log.info("订单创建完成: orderNo={}, channel={}, amount={}",
+                order.getOrderNo(), payChannel, order.getOrderAmount());
         return Result.ok(result);
+    }
+
+    private String getClientIp() {
+        // 简化处理，实际应从 request 获取
+        return "127.0.0.1";
     }
 
     @Operation(summary = "订单列表")
@@ -101,5 +103,75 @@ public class OrderController {
     public Result<Void> refund(@PathVariable Long id) {
         orderService.refund(id);
         return Result.success("退款申请已提交");
+    }
+
+    // ======================== 管理端 ========================
+
+    @Operation(summary = "[管理端] 测试订单（调用开放API下单，返回支付链接）")
+    @PostMapping("/admin/test-create")
+    public Result<Map<String, Object>> adminTestCreate(@RequestBody Map<String, Object> params) {
+        Object amountObj = params.get("amount");
+        String amount = amountObj == null ? "1.00" : amountObj.toString();
+        String payChannel = String.valueOf(params.getOrDefault("payChannel", "ALIPAY")).toUpperCase();
+        String merchantNo = (String) params.get("merchantNo");
+
+        Merchant merchant;
+        if (StringUtils.hasText(merchantNo)) {
+            merchant = merchantMapper.selectOne(
+                    new LambdaQueryWrapper<Merchant>()
+                            .eq(Merchant::getMerchantNo, merchantNo)
+                            .last("LIMIT 1"));
+        } else {
+            // 默认取第一个已开通开放API且已配置密钥的商户
+            merchant = merchantMapper.selectOne(
+                    new LambdaQueryWrapper<Merchant>()
+                            .eq(Merchant::getStatus, 1)
+                            .eq(Merchant::getApiEnabled, 1)
+                            .isNotNull(Merchant::getApiSecret)
+                            .ne(Merchant::getApiSecret, "")
+                            .last("LIMIT 1"));
+        }
+        if (merchant == null || !StringUtils.hasText(merchant.getApiSecret())) {
+            throw new BusinessException("暂无可用测试商户（需开通开放API并配置密钥）");
+        }
+
+        // 构造开放API下单请求（与服务端验签逻辑一致）
+        OpenOrderCreateReq req = new OpenOrderCreateReq();
+        req.setAppId(merchant.getMerchantNo());
+        req.setTimestamp(String.valueOf(System.currentTimeMillis()));
+        req.setNonce(UUID.randomUUID().toString().replace("-", ""));
+        req.setAmount(amount);
+        req.setPayChannel(payChannel);
+        req.setProductName("测试订单");
+
+        Map<String, String> signParams = new LinkedHashMap<>();
+        signParams.put("appId", req.getAppId());
+        signParams.put("timestamp", req.getTimestamp());
+        signParams.put("nonce", req.getNonce());
+        signParams.put("amount", req.getAmount());
+        signParams.put("payChannel", req.getPayChannel());
+        signParams.put("productName", req.getProductName());
+        req.setSign(SignUtil.sign(signParams, merchant.getApiSecret()));
+
+        Map<String, Object> result = new LinkedHashMap<>(openApiService.createOrder(req));
+        result.put("merchantNo", merchant.getMerchantNo());
+        return Result.ok(result);
+    }
+
+    @Operation(summary = "[管理端] 手动触发订单回调推送")
+    @PostMapping("/admin/callback/{orderNo}")
+    public Result<Map<String, Object>> adminCallback(@PathVariable String orderNo) {
+        Order order = orderService.getByOrderNo(orderNo);
+        if (order == null) {
+            throw new BusinessException(404, "订单不存在");
+        }
+        notifyCallbackService.notifyPaid(orderNo);
+        Order updated = orderService.getByOrderNo(orderNo);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("orderNo", orderNo);
+        result.put("notifyStatus", updated.getNotifyStatus());
+        result.put("notifyCount", updated.getNotifyCount());
+        result.put("notifyTime", updated.getNotifyTime());
+        return Result.ok(result);
     }
 }

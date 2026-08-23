@@ -44,4 +44,10 @@ public class QrCodeController {
     public Result<Map<String, Object>> qrcodeInfo(@RequestParam String merchantNo) {
         return Result.ok(qrCodeService.getCashierInfo(merchantNo));
     }
+
+    @Operation(summary = "生成任意内容的二维码（返回 base64 data URI）")
+    @GetMapping("/encode")
+    public Result<String> encode(@RequestParam String content) {
+        return Result.ok(qrCodeService.encodeToDataUri(content));
+    }
 }

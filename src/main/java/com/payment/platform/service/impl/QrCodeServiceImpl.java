@@ -12,9 +12,11 @@ import com.payment.platform.common.utils.CodeGenerator;
 import com.payment.platform.entity.AlipayConfig;
 import com.payment.platform.entity.Merchant;
 import com.payment.platform.entity.Qrcode;
+import com.payment.platform.entity.WechatConfig;
 import com.payment.platform.mapper.AlipayConfigMapper;
 import com.payment.platform.mapper.MerchantMapper;
 import com.payment.platform.mapper.QrCodeMapper;
+import com.payment.platform.mapper.WechatConfigMapper;
 import com.payment.platform.service.QrCodeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -100,11 +102,11 @@ public class QrCodeServiceImpl implements QrCodeService {
             "Source Han Sans SC", "Source Han Sans CN",
     };
 
-    // === Alipay brand colors ===
-    private static final Color ALIPAY_BLUE   = new Color(22, 119, 255);  // #1677ff
-    private static final Color ALIPAY_DARK   = new Color(0, 80, 200);    // logo shadow
+    // === 码牌品牌色（中性聚合支付风格）===
+    private static final Color BRAND_BLUE   = new Color(0, 180, 100);   // #00B464 — 绿色（聚合支付通用色）
+    private static final Color BRAND_DARK   = new Color(0, 140, 70);    // logo 阴影
     private static final Color CARD_BG       = Color.WHITE;
-    private static final Color TEXT_TITLE    = new Color(22, 119, 255);
+    private static final Color TEXT_TITLE    = new Color(0, 180, 100);
     private static final Color TEXT_MERCHANT = new Color(51, 51, 51);
     private static final Color TEXT_HINT     = new Color(153, 153, 153);
     private static final Color QR_BG         = Color.WHITE;
@@ -123,6 +125,7 @@ public class QrCodeServiceImpl implements QrCodeService {
     private final QrCodeMapper qrCodeMapper;
     private final MerchantMapper merchantMapper;
     private final AlipayConfigMapper alipayConfigMapper;
+    private final WechatConfigMapper wechatConfigMapper;
 
     @Value("${app.cashier-base-url}")
     private String cashierBaseUrl;
@@ -207,17 +210,61 @@ public class QrCodeServiceImpl implements QrCodeService {
         if (merchant == null) {
             throw new BusinessException("商户不存在或已停用");
         }
-        // 查询当前启用的支付宝配置
+        // 查询启用的支付宝配置
         AlipayConfig alipayConfig = alipayConfigMapper.selectOne(
                 new LambdaQueryWrapper<AlipayConfig>()
                         .eq(AlipayConfig::getStatus, 1)
+                        .last("LIMIT 1"));
+        // 查询启用的微信支付配置
+        WechatConfig wechatConfig = wechatConfigMapper.selectOne(
+                new LambdaQueryWrapper<WechatConfig>()
+                        .eq(WechatConfig::getStatus, 1)
                         .last("LIMIT 1"));
         Map<String, Object> info = new HashMap<>();
         info.put("merchantId", merchant.getId());
         info.put("merchantNo", merchant.getMerchantNo());
         info.put("merchantName", merchant.getMerchantName());
         info.put("alipayConfigId", alipayConfig != null ? alipayConfig.getId() : null);
+        info.put("wechatConfigId", wechatConfig != null ? wechatConfig.getId() : null);
+        // 标记可用通道
+        info.put("hasAlipay", alipayConfig != null);
+        info.put("hasWechat", wechatConfig != null);
         return info;
+    }
+
+    @Override
+    public String encodeToDataUri(String content) {
+        if (content == null || content.isBlank()) {
+            throw new BusinessException("二维码内容不能为空");
+        }
+        try {
+            BitMatrix matrix = buildQrMatrix(content);
+            // 留白（静区），便于扫码识别
+            int pad = 16;
+            int size = QR_SIZE + pad * 2;
+            BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = img.createGraphics();
+            try {
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, size, size);
+                g.setColor(Color.BLACK);
+                for (int x = 0; x < QR_SIZE; x++) {
+                    for (int y = 0; y < QR_SIZE; y++) {
+                        if (matrix.get(x, y)) {
+                            g.fillRect(pad + x, pad + y, 1, 1);
+                        }
+                    }
+                }
+            } finally {
+                g.dispose();
+            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(img, "PNG", baos);
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
+        } catch (Exception e) {
+            log.error("二维码生成失败", e);
+            throw new BusinessException("二维码生成失败: " + e.getMessage());
+        }
     }
 
     // ======================== 私有方法 ========================
@@ -292,7 +339,7 @@ public class QrCodeServiceImpl implements QrCodeService {
     private void drawTitle(Graphics2D g) {
         g.setColor(TEXT_TITLE);
         g.setFont(new Font(CN_FONT, Font.BOLD, 24));
-        String title = "支付宝商家收款";
+        String title = "聚合支付收款";
         FontMetrics fm = g.getFontMetrics();
         int titleW = fm.stringWidth(title);
         g.drawString(title, (CARD_WIDTH - titleW) / 2, 62);
@@ -316,7 +363,7 @@ public class QrCodeServiceImpl implements QrCodeService {
         }
     }
 
-    /** 绘制中心支付宝 Logo（蓝色圆角方块 + 白色"支"字） */
+    /** 绘制中心 Logo（绿色圆角方块 + 白色"付"字） */
     private void drawCenterLogo(Graphics2D g) {
         // Logo 白色底边（让 Logo 与 QR 码方块之间有隔离）
         g.setColor(QR_BG);
@@ -324,24 +371,24 @@ public class QrCodeServiceImpl implements QrCodeService {
         g.fillRoundRect(LOGO_X - clearance, LOGO_Y - clearance,
                 LOGO_SIZE + clearance * 2, LOGO_SIZE + clearance * 2, LOGO_ARC + clearance, LOGO_ARC + clearance);
 
-        // Logo 蓝色背景
-        g.setColor(ALIPAY_BLUE);
+        // Logo 绿色背景
+        g.setColor(BRAND_BLUE);
         g.fillRoundRect(LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE, LOGO_ARC, LOGO_ARC);
 
         // Logo 底部深色阴影条
-        g.setColor(ALIPAY_DARK);
+        g.setColor(BRAND_DARK);
         g.fillRoundRect(LOGO_X, LOGO_Y + LOGO_SIZE - 20, LOGO_SIZE, 20, LOGO_ARC, LOGO_ARC);
         g.fillRect(LOGO_X, LOGO_Y + LOGO_SIZE - 20, LOGO_SIZE, 10);
 
-        // 白色 "支" 字
+        // 白色 "付" 字
         g.setColor(Color.WHITE);
         g.setFont(new Font(CN_FONT, Font.BOLD, 38));
         FontMetrics fm = g.getFontMetrics();
-        String zhi = "支";
-        int charW = fm.stringWidth(zhi);
+        String zi = "付";
+        int charW = fm.stringWidth(zi);
         int charH = fm.getAscent();
         // 文字在 Logo 中偏上
-        g.drawString(zhi, LOGO_X + (LOGO_SIZE - charW) / 2, LOGO_Y + (LOGO_SIZE + charH) / 2 - 6);
+        g.drawString(zi, LOGO_X + (LOGO_SIZE - charW) / 2, LOGO_Y + (LOGO_SIZE + charH) / 2 - 6);
     }
 
     /** 绘制商户名称和底部提示 */
@@ -360,7 +407,7 @@ public class QrCodeServiceImpl implements QrCodeService {
         g.setColor(TEXT_HINT);
         g.setFont(new Font(CN_FONT, Font.PLAIN, 13));
         fm = g.getFontMetrics();
-        String hint = "码牌永久有效 · 支付宝扫码支付";
+        String hint = "码牌永久有效 · 微信/支付宝扫码均可支付";
         int hintW = fm.stringWidth(hint);
         g.drawString(hint, (CARD_WIDTH - hintW) / 2, infoY + 30);
     }

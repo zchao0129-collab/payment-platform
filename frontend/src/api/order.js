@@ -24,3 +24,13 @@ export function getOrderDetail(id) {
 export function refundOrder(id) {
   return request.post(`/order/${id}/refund`)
 }
+
+/** [管理端] 测试订单（调用开放API下单，返回支付链接） */
+export function adminTestCreate(data) {
+  return request.post('/order/admin/test-create', data)
+}
+
+/** [管理端] 手动触发订单回调推送 */
+export function adminTriggerCallback(orderNo) {
+  return request.post(`/order/admin/callback/${orderNo}`)
+}

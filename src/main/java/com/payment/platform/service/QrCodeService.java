@@ -15,4 +15,7 @@ public interface QrCodeService {
 
     /** 收银台获取商户信息（公开接口） */
     java.util.Map<String, Object> getCashierInfo(String merchantNo);
+
+    /** 生成任意内容的二维码（返回 data:image/png;base64,... 字符串） */
+    String encodeToDataUri(String content);
 }

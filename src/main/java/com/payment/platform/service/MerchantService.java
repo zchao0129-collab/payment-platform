@@ -22,4 +22,16 @@ public interface MerchantService {
 
     /** 管理员停用/启用商户 */
     void toggleStatus(Long merchantId, Integer status);
+
+    /** 管理员编辑商户信息（手机号变更时同步关联用户） */
+    void adminUpdate(Merchant merchant);
+
+    /** 配置商户开放API（开关/回调地址/IP白名单） */
+    void updateApiConfig(Long merchantId, Integer apiEnabled, String notifyUrl, String ipWhitelist);
+
+    /** 重置商户API密钥并返回新密钥 */
+    String resetApiSecret(Long merchantId);
+
+    /** 删除商户（级联清理关联用户/推荐关系/码牌/订单/佣金/提现等数据） */
+    void deleteMerchant(Long merchantId);
 }

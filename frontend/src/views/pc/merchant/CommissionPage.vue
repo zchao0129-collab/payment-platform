@@ -29,7 +29,7 @@
       <!-- Commission Table -->
       <el-table :data="commissions" stripe style="width:100%" v-loading="loading">
         <el-table-column prop="orderNo" label="来源订单号" />
-        <el-table-column label="订单金额">
+        <el-table-column label="收款金额">
           <template #default="{ row }">¥{{ fmt(row.orderAmount) }}</template>
         </el-table-column>
         <el-table-column label="返佣比例">
@@ -39,11 +39,6 @@
           <template #default="{ row }">¥{{ fmt(row.commAmount) }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="生成时间" />
-        <el-table-column label="提现状态">
-          <template #default="{ row }">
-            <span class="tag" :class="statusClass(row.withdrawStatus)">{{ statusText(row.withdrawStatus) }}</span>
-          </template>
-        </el-table-column>
       </el-table>
 
       <div class="pagination">
@@ -82,11 +77,6 @@ const summary = reactive({
   auditing: 0,
 })
 
-const statusMap = { 1: '未提现', 2: '审核中', 3: '已打款', 4: '已驳回' }
-const statusClassMap = { 1: 'tag-blue', 2: 'tag-orange', 3: 'tag-green', 4: 'tag-red' }
-
-function statusText(s) { return statusMap[s] || '未知' }
-function statusClass(s) { return statusClassMap[s] || 'tag-gray' }
 function fmt(v) { return v != null ? Number(v).toFixed(2) : '0.00' }
 function fmtRate(v) { return v != null ? (Number(v) * 100).toFixed(0) + '%' : '—' }
 

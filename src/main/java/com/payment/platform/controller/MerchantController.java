@@ -72,10 +72,41 @@ public class MerchantController {
         return Result.ok();
     }
 
+    @Operation(summary = "[管理端] 修改商户信息")
+    @PutMapping("/admin/{id}")
+    public Result<Void> adminUpdate(@PathVariable Long id, @RequestBody Merchant merchant) {
+        merchant.setId(id);
+        merchantService.adminUpdate(merchant);
+        return Result.success("修改成功");
+    }
+
     @Operation(summary = "[管理端] 获取商户码牌")
     @GetMapping("/admin/{merchantId}/qrcode")
     public Result<Qrcode> adminQrcode(@PathVariable Long merchantId) {
         Qrcode qrcode = qrCodeService.getByMerchantId(merchantId);
         return Result.ok(qrcode);
+    }
+
+    @Operation(summary = "[管理端] 配置商户开放API")
+    @PutMapping("/admin/{id}/api-config")
+    public Result<Void> adminApiConfig(@PathVariable Long id, @RequestBody Map<String, Object> params) {
+        merchantService.updateApiConfig(id,
+                params.get("apiEnabled") != null ? Integer.valueOf(params.get("apiEnabled").toString()) : null,
+                (String) params.get("notifyUrl"),
+                (String) params.get("ipWhitelist"));
+        return Result.success("配置成功");
+    }
+
+    @Operation(summary = "[管理端] 重置商户API密钥")
+    @PostMapping("/admin/{id}/api-secret")
+    public Result<String> adminResetApiSecret(@PathVariable Long id) {
+        return Result.ok("密钥已重置", merchantService.resetApiSecret(id));
+    }
+
+    @Operation(summary = "[管理端] 删除商户")
+    @DeleteMapping("/admin/{id}")
+    public Result<Void> adminDelete(@PathVariable Long id) {
+        merchantService.deleteMerchant(id);
+        return Result.success("商户删除成功");
     }
 }

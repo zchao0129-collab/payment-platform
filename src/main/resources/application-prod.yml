@@ -59,6 +59,8 @@ jwt:
 # 收银台前端地址（用于码牌 URL 生成）
 app:
   cashier-base-url: https://qrpay.csmmkj.cn
+  # 开放API对外域名（支付链接 payUrl / 支付完成跳转链接 的拼接基地址），按实际对外域名修改
+  open-api-base-url: https://qrpay.csmmkj.cn
 
 file:
   upload-path: /home/data/payment-platform/upload   # Linux
@@ -87,6 +89,11 @@ alipay:
   notify-base-url: https://qrpay.csmmkj.cn
   # 签名类型
   sign-type: RSA2
+
+# 微信支付配置
+wechat:
+  pay-gateway: https://api.mch.weixin.qq.com
+  notify-base-url: https://qrpay.csmmkj.cn
 
 # 短信 (placeholder)
 sms:

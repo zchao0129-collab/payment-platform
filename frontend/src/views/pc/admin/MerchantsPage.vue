@@ -6,7 +6,7 @@
         <el-input v-model="search.merchantName" placeholder="商户名称" style="width:180px" clearable />
         <el-input v-model="search.phone" placeholder="手机号" style="width:160px" clearable />
         <el-button type="primary" @click="handleSearch">查询</el-button>
-        <el-button type="success" @click="addVisible = true">+ 新增商户</el-button>
+        <el-button type="success" @click="openCreate">+ 新增商户</el-button>
       </div>
 
       <el-table :data="merchants" stripe style="width:100%" v-loading="loading">
@@ -23,11 +23,22 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160">
+        <el-table-column label="开放API" width="90">
           <template #default="{ row }">
-            <a href="#" @click.prevent="viewDetail(row)">查看</a>
+            <span class="tag" :class="row.apiEnabled === 1 ? 'tag-green' : 'tag-gray'" style="cursor:pointer" @click="toggleApi(row)">
+              {{ row.apiEnabled === 1 ? '已开通' : '未开通' }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="270">
+          <template #default="{ row }">
+            <a href="#" @click.prevent="openEdit(row)">编辑</a>
             <span style="margin:0 4px;color:#ddd">|</span>
             <a href="#" @click.prevent="previewQrcode(row)">码牌预览</a>
+            <span style="margin:0 4px;color:#ddd">|</span>
+            <a href="#" @click.prevent="resetSecret(row)">重置密钥</a>
+            <span style="margin:0 4px;color:#ddd">|</span>
+            <a href="#" class="danger-link" @click.prevent="removeMerchant(row)">删除</a>
           </template>
         </el-table-column>
       </el-table>
@@ -45,7 +56,7 @@
       </div>
     </div>
 
-    <MerchantModal v-model:visible="addVisible" @saved="fetchMerchants" />
+    <MerchantModal v-model:visible="merchantModalVisible" :merchant="editingMerchant" @saved="fetchMerchants" />
 
     <!-- 码牌预览弹窗 -->
     <el-dialog v-model="qrcodeVisible" title="码牌预览" width="480px" center>
@@ -61,20 +72,33 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 重置密钥弹窗 -->
+    <el-dialog v-model="secretVisible" title="重置API密钥" width="520px" center>
+      <div style="padding:8px 0">
+        <el-alert type="warning" :closable="false" show-icon title="请立即保存，密钥仅展示一次" />
+        <p style="margin:16px 0 8px;color:#666;font-size:13px">商户：{{ secretMerchantName }}</p>
+        <div class="secret-box">{{ newSecret }}</div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="secretVisible = false">我已保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMerchantList, toggleMerchantStatus, getMerchantQrcode } from '@/api/merchant'
+import { getMerchantList, toggleMerchantStatus, getMerchantQrcode, resetApiSecret, updateApiConfig, deleteMerchant } from '@/api/merchant'
 import MerchantModal from '@/components/MerchantModal.vue'
 
 const search = reactive({ merchantName: '', phone: '' })
 const page = reactive({ current: 1, size: 10, total: 0 })
 const merchants = ref([])
 const loading = ref(false)
-const addVisible = ref(false)
+const merchantModalVisible = ref(false)
+const editingMerchant = ref(null)
 
 // 码牌预览
 const qrcodeVisible = ref(false)
@@ -82,6 +106,11 @@ const qrcodeLoading = ref(false)
 const qrcodeImage = ref('')
 const qrcodeNo = ref('')
 const qrcodeMerchantName = ref('')
+
+// 重置API密钥
+const secretVisible = ref(false)
+const newSecret = ref('')
+const secretMerchantName = ref('')
 
 async function previewQrcode(row) {
   qrcodeVisible.value = true
@@ -133,8 +162,64 @@ async function toggleStatus(row) {
   }
 }
 
-function viewDetail(row) {
-  ElMessage.info('商户详情: ' + row.merchantName)
+function openCreate() {
+  editingMerchant.value = null
+  merchantModalVisible.value = true
+}
+
+function openEdit(row) {
+  editingMerchant.value = row
+  merchantModalVisible.value = true
+}
+
+async function resetSecret(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要重置商户「${row.merchantName}」的API签名密钥吗？重置后原密钥将立即失效。`,
+      '确认重置',
+      { type: 'warning' }
+    )
+  } catch (e) {
+    return
+  }
+  try {
+    const secret = await resetApiSecret(row.id)
+    newSecret.value = secret
+    secretMerchantName.value = row.merchantName
+    secretVisible.value = true
+  } catch (e) {
+    // 错误已由拦截器提示
+  }
+}
+
+async function toggleApi(row) {
+  const newVal = row.apiEnabled === 1 ? 0 : 1
+  try {
+    await updateApiConfig(row.id, { apiEnabled: newVal })
+    row.apiEnabled = newVal
+    ElMessage.success(newVal === 1 ? '已开通开放API' : '已关闭开放API')
+  } catch (e) {
+    // 错误已由拦截器提示
+  }
+}
+
+async function removeMerchant(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除商户「${row.merchantName}」吗？将同时删除其关联的订单、码牌、佣金、提现及登录账号等数据，且不可恢复。`,
+      '确认删除',
+      { type: 'warning', confirmButtonText: '删除', confirmButtonClass: 'el-button--danger' }
+    )
+  } catch (e) {
+    return
+  }
+  try {
+    await deleteMerchant(row.id)
+    ElMessage.success('删除成功')
+    fetchMerchants()
+  } catch (e) {
+    // 错误已由拦截器提示
+  }
 }
 
 onMounted(() => fetchMerchants())
@@ -143,4 +228,6 @@ onMounted(() => fetchMerchants())
 <style scoped>
 .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; }
 .page-info { font-size: 13px; color: #999; }
+.secret-box { font-family: monospace; word-break: break-all; background: #f5f7fa; border: 1px dashed #c0c4cc; border-radius: 6px; padding: 12px; font-size: 14px; color: #303133; user-select: all; }
+.danger-link { color: #f56c6c; }
 </style>

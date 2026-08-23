@@ -9,16 +9,21 @@ import com.payment.platform.dto.req.OrderQueryReq;
 import com.payment.platform.entity.*;
 import com.payment.platform.enums.OrderStatusEnum;
 import com.payment.platform.mapper.*;
+import com.payment.platform.service.AlipayPaymentService;
 import com.payment.platform.service.OrderService;
+import com.payment.platform.service.WechatPaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -30,6 +35,11 @@ public class OrderServiceImpl implements OrderService {
     private final MerchantMapper merchantMapper;
     private final PaymentLogMapper paymentLogMapper;
     private final RedissonClient redissonClient;
+    private final AlipayPaymentService alipayPaymentService;
+    private final WechatPaymentService wechatPaymentService;
+
+    @Value("${app.cashier-base-url}")
+    private String cashierBaseUrl;
 
     @Override
     @Transactional
@@ -55,6 +65,47 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.insert(order);
         log.info("订单创建: orderNo={}, amount={}", order.getOrderNo(), amount);
         return order;
+    }
+
+    @Override
+    public Map<String, Object> buildPaymentParams(Order order, String payChannel, String openid, String clientIp) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("orderNo", order.getOrderNo());
+        result.put("amount", order.getOrderAmount().toString());
+        result.put("payChannel", payChannel);
+
+        if ("WECHAT".equalsIgnoreCase(payChannel)) {
+            try {
+                if (openid != null && !openid.isBlank()) {
+                    Map<String, String> jsapiResult = wechatPaymentService.buildJSAPIPay(
+                            order.getOrderNo(), order.getOrderAmount(), order.getProductName(),
+                            openid, clientIp);
+                    result.putAll(jsapiResult);
+                    result.put("payType", "jsapi");
+                } else {
+                    String returnUrl = cashierBaseUrl + "/app/pay-result?orderNo=" + order.getOrderNo();
+                    Map<String, String> h5Result = wechatPaymentService.buildH5Pay(
+                            order.getOrderNo(), order.getOrderAmount(), order.getProductName(),
+                            clientIp, returnUrl);
+                    result.put("mwebUrl", h5Result.get("mwebUrl"));
+                    result.put("payType", "h5");
+                }
+            } catch (Exception e) {
+                log.error("创建微信支付订单失败: orderNo={}", order.getOrderNo(), e);
+                result.put("payError", e.getMessage());
+            }
+        } else {
+            String returnUrl = cashierBaseUrl + "/api/alipay/return";
+            try {
+                Map<String, String> alipayResult = alipayPaymentService.buildWapPay(
+                        order.getOrderNo(), order.getOrderAmount(), order.getProductName(), returnUrl);
+                result.put("alipayForm", alipayResult.getOrDefault("alipayForm", ""));
+            } catch (Exception e) {
+                log.error("创建支付宝支付订单失败: orderNo={}", order.getOrderNo(), e);
+                result.put("payError", e.getMessage());
+            }
+        }
+        return result;
     }
 
     @Override

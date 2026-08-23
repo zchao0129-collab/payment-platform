@@ -134,18 +134,21 @@ public class CommissionServiceImpl implements CommissionService {
     @Override
     @Transactional
     public void withdraw(Long merchantId, BigDecimal amount) {
-        // 校验可提现金额
-        BigDecimal withdrawable = getWithdrawableAmount(merchantId);
+        // 校验提现金额
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("提现金额必须大于0");
-        }
-        if (amount.compareTo(withdrawable) > 0) {
-            throw new BusinessException("可提现余额不足，当前可提现: " + withdrawable);
         }
         // 查询商户信息
         Merchant merchant = merchantMapper.selectById(merchantId);
         if (merchant == null) {
             throw new BusinessException("商户不存在");
+        }
+        // 校验商户资料完整性（手机号、支付宝账号、真实姓名、身份证号）
+        validateMerchantProfile(merchant);
+        // 校验可提现金额
+        BigDecimal withdrawable = getWithdrawableAmount(merchantId);
+        if (amount.compareTo(withdrawable) > 0) {
+            throw new BusinessException("可提现余额不足，当前可提现: " + withdrawable);
         }
         // 生成提现单
         Withdrawal withdrawal = new Withdrawal();
@@ -176,6 +179,48 @@ public class CommissionServiceImpl implements CommissionService {
 
     // ---- 私有方法 ----
 
+    /**
+     * 校验商户资料完整性：手机号、支付宝账号、真实姓名、身份证号。
+     * 资料不完整或身份证号校验不通过时抛出异常，提示商户自行补充。
+     */
+    private void validateMerchantProfile(Merchant merchant) {
+        if (hasNoText(merchant.getPhone())) {
+            throw new BusinessException("商户资料不完整：请先补充手机号");
+        }
+        if (hasNoText(merchant.getAlipayAccount())) {
+            throw new BusinessException("商户资料不完整：请先补充支付宝账号");
+        }
+        if (hasNoText(merchant.getRealName())) {
+            throw new BusinessException("商户资料不完整：请先补充真实姓名");
+        }
+        if (hasNoText(merchant.getIdCardNo())) {
+            throw new BusinessException("商户资料不完整：请先补充身份证号码");
+        }
+        if (!isValidIdCard(merchant.getIdCardNo())) {
+            throw new BusinessException("身份证号码校验不通过，请核实后重新填写");
+        }
+    }
+
+    private boolean hasNoText(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    /** 18 位身份证号码真实性校验（含校验位） */
+    private boolean isValidIdCard(String idCardNo) {
+        if (idCardNo == null || !idCardNo.matches("\\d{17}[\\dXx]")) {
+            return false;
+        }
+        int[] weights = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
+        char[] checkCodes = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
+        int sum = 0;
+        for (int i = 0; i < 17; i++) {
+            sum += (idCardNo.charAt(i) - '0') * weights[i];
+        }
+        char expected = checkCodes[sum % 11];
+        char actual = idCardNo.charAt(17);
+        return expected == actual || (expected == 'X' && (actual == 'x' || actual == 'X'));
+    }
+
     private void generateCommissionForOrder(Order order) {
         // 检查是否已生成
         if (commissionMapper.selectCount(
@@ -190,6 +235,10 @@ public class CommissionServiceImpl implements CommissionService {
         BigDecimal commAmount = order.getOrderAmount()
                 .multiply(rate)
                 .setScale(2, RoundingMode.HALF_UP);
+        // 佣金金额四舍五入后为 0 时，不生成佣金记录（避免产生无意义的 0 佣金）
+        if (commAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
         Commission commission = new Commission();
         commission.setCommissionNo(CodeGenerator.generateCommissionNo());
         commission.setMerchantId(order.getMerchantId());
