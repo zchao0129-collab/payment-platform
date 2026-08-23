@@ -76,6 +76,7 @@ sign = 6880A402994418EC0F633F511E26BC8C
 | productName | string | 否 | 商品名称，默认「扫码支付」 |
 | amount | string | 是 | 金额，单位元，如 `100.00` |
 | payChannel | string | 否 | `ALIPAY` / `WECHAT`，默认 `ALIPAY` |
+| tradeType | string | 否 | 支付宝交易类型：`WAP`（手机网站支付，默认）/ `F2F`（当面付）；微信通道忽略 |
 | notifyUrl | string | 否 | 异步回调地址，覆盖商户默认 |
 | returnUrl | string | 否 | 支付完成后页面跳转地址 |
 | remark | string | 否 | 备注 |
@@ -96,7 +97,21 @@ sign = 6880A402994418EC0F633F511E26BC8C
 }
 ```
 
-**响应：**
+**当面付请求示例：** `payChannel=ALIPAY` 且 `tradeType=F2F`（`tradeType` 参与签名）：
+
+```json
+{
+  "appId": "M202608221234",
+  "timestamp": "1755000000000",
+  "nonce": "abc124",
+  "sign": "……（含 tradeType 重新计算）",
+  "amount": "100.00",
+  "payChannel": "ALIPAY",
+  "tradeType": "F2F"
+}
+```
+
+**响应（手机网站支付 `tradeType=WAP`，默认）：**
 
 ```json
 {
@@ -106,12 +121,33 @@ sign = 6880A402994418EC0F633F511E26BC8C
     "orderNo": "ORD2026082212345",
     "amount": "100.00",
     "payChannel": "ALIPAY",
+    "tradeType": "WAP",
     "payUrl": "https://qrpay.csmmkj.cn/api/open/pay/ORD2026082212345"
   }
 }
 ```
 
 > `payUrl` 是**支付链接**：商户将其交给用户，用户点击（浏览器打开）即可直接拉起支付，无需再输入金额。
+
+**响应（当面付 `tradeType=F2F`）：**
+
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "orderNo": "ORD2026082212346",
+    "amount": "100.00",
+    "payChannel": "ALIPAY",
+    "tradeType": "F2F",
+    "qrCode": "https://qr.alipay.com/bax03431xyz..."
+  }
+}
+```
+
+> `qrCode` 是支付宝当面付二维码内容：商户将其渲染成二维码图片展示给顾客，顾客用支付宝 App 扫码支付。当面付订单**不返回** `payUrl`。
+
+> 说明：`tradeType` 为可选参数，若填写会参与签名（与其它业务字段一致，按 key 升序拼接）。
 
 ---
 
@@ -156,10 +192,11 @@ sign = 6880A402994418EC0F633F511E26BC8C
 
 `GET {BASE}/api/open/pay/{orderNo}`
 
-- 支付宝订单：返回自动提交的收银台表单页面，自动跳转支付宝收银台；
-- 微信订单：302 跳转到微信 H5 支付页。
+- 支付宝手机网站支付（WAP）订单：返回自动提交的收银台表单页面，自动跳转支付宝收银台；
+- 微信订单：302 跳转到微信 H5 支付页；
+- 支付宝当面付（F2F）订单：返回二维码内容页面（正常由下单接口直接返回 `qrCode`，此链接仅兜底）。
 
-> 该链接由下单接口的 `payUrl` 直接给出，用户点击即付。
+> 该链接由下单接口的 `payUrl` 直接给出（仅 WAP 订单），用户点击即付；F2F 订单不产生 `payUrl`。
 
 ---
 
