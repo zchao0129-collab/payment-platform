@@ -20,6 +20,16 @@ public interface AlipayPaymentService {
     Map<String, String> buildWapPay(String orderNo, BigDecimal amount, String subject, String returnUrl);
 
     /**
+     * 构建当面付（F2F）预下单请求，返回二维码内容
+     *
+     * @param orderNo 商户订单号
+     * @param amount  支付金额
+     * @param subject 商品标题
+     * @return { "qrCode": "https://qr.alipay.com/...", "orderNo": "..." }
+     */
+    Map<String, String> buildF2FPay(String orderNo, BigDecimal amount, String subject);
+
+    /**
      * 验证支付宝异步通知签名
      *
      * @param params 通知参数

@@ -7,6 +7,7 @@ import com.payment.platform.common.BusinessException;
 import com.payment.platform.common.utils.CodeGenerator;
 import com.payment.platform.dto.req.OrderQueryReq;
 import com.payment.platform.entity.*;
+import com.payment.platform.enums.AlipayTradeTypeEnum;
 import com.payment.platform.enums.OrderStatusEnum;
 import com.payment.platform.mapper.*;
 import com.payment.platform.service.AlipayPaymentService;
@@ -94,12 +95,25 @@ public class OrderServiceImpl implements OrderService {
                 log.error("创建微信支付订单失败: orderNo={}", order.getOrderNo(), e);
                 result.put("payError", e.getMessage());
             }
+        } else if (AlipayTradeTypeEnum.isF2F(order.getTradeType())) {
+            // 支付宝当面付：预下单返回二维码内容
+            try {
+                Map<String, String> f2fResult = alipayPaymentService.buildF2FPay(
+                        order.getOrderNo(), order.getOrderAmount(), order.getProductName());
+                result.put("qrCode", f2fResult.getOrDefault("qrCode", ""));
+                result.put("tradeType", "F2F");
+            } catch (Exception e) {
+                log.error("创建支付宝当面付订单失败: orderNo={}", order.getOrderNo(), e);
+                result.put("payError", e.getMessage());
+            }
         } else {
+            // 支付宝手机网站支付（默认 WAP）
             String returnUrl = cashierBaseUrl + "/api/alipay/return";
             try {
                 Map<String, String> alipayResult = alipayPaymentService.buildWapPay(
                         order.getOrderNo(), order.getOrderAmount(), order.getProductName(), returnUrl);
                 result.put("alipayForm", alipayResult.getOrDefault("alipayForm", ""));
+                result.put("tradeType", "WAP");
             } catch (Exception e) {
                 log.error("创建支付宝支付订单失败: orderNo={}", order.getOrderNo(), e);
                 result.put("payError", e.getMessage());

@@ -50,11 +50,14 @@ public class OrderController {
         String remark = (String) params.getOrDefault("remark", "");
         // 支付通道: ALIPAY 或 WECHAT（前端根据 UA 检测传入）
         String payChannel = ((String) params.getOrDefault("payChannel", "ALIPAY")).toUpperCase();
+        // 支付宝交易类型: WAP(手机网站支付,默认) / F2F(当面付)；微信通道忽略
+        String tradeType = ((String) params.getOrDefault("tradeType", "WAP")).toUpperCase();
         String openid = (String) params.get("openid");
 
-        // 1. 创建本地订单（标记支付通道）
+        // 1. 创建本地订单（标记支付通道 + 交易类型）
         Order order = orderService.createOrder(merchantId, productName, amount, qrcodeId, remark);
         order.setPayChannel(payChannel);
+        order.setTradeType(tradeType);
         orderMapper.updateById(order);
 
         // 2. 按通道构建支付参数
@@ -113,6 +116,7 @@ public class OrderController {
         Object amountObj = params.get("amount");
         String amount = amountObj == null ? "1.00" : amountObj.toString();
         String payChannel = String.valueOf(params.getOrDefault("payChannel", "ALIPAY")).toUpperCase();
+        String tradeType = String.valueOf(params.getOrDefault("tradeType", "WAP")).toUpperCase();
         String merchantNo = (String) params.get("merchantNo");
 
         Merchant merchant;
@@ -142,6 +146,7 @@ public class OrderController {
         req.setNonce(UUID.randomUUID().toString().replace("-", ""));
         req.setAmount(amount);
         req.setPayChannel(payChannel);
+        req.setTradeType(tradeType);
         req.setProductName("测试订单");
 
         Map<String, String> signParams = new LinkedHashMap<>();
@@ -150,6 +155,7 @@ public class OrderController {
         signParams.put("nonce", req.getNonce());
         signParams.put("amount", req.getAmount());
         signParams.put("payChannel", req.getPayChannel());
+        signParams.put("tradeType", req.getTradeType());
         signParams.put("productName", req.getProductName());
         req.setSign(SignUtil.sign(signParams, merchant.getApiSecret()));
 

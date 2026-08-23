@@ -31,6 +31,9 @@ public class OpenOrderCreateReq {
     /** 支付通道: ALIPAY / WECHAT，默认 ALIPAY */
     private String payChannel;
 
+    /** 支付宝交易类型: WAP(默认,手机网站支付) / F2F(当面付)；微信通道忽略 */
+    private String tradeType;
+
     /** 本单回调地址（可选，覆盖商户默认） */
     private String notifyUrl;
 

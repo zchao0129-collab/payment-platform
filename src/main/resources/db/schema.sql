@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS t_order (
     order_amount    DECIMAL(12,2)   NOT NULL    COMMENT '订单金额',
     order_status    TINYINT         DEFAULT 1   COMMENT '状态: 1-新建, 2-已支付, 3-已回调, 4-已退款, 5-已失效, 6-支付失败',
     pay_channel     VARCHAR(16)     DEFAULT 'ALIPAY' COMMENT '支付通道: ALIPAY, WECHAT',
+    trade_type      VARCHAR(16)     DEFAULT 'WAP'  COMMENT '交易类型: WAP-手机网站支付, F2F-当面付(支付宝)',
     alipay_trade_no VARCHAR(64)     DEFAULT ''  COMMENT '支付宝交易号',
     channel_trade_no VARCHAR(64)    DEFAULT ''  COMMENT '通道交易号(微信/支付宝通用)',
     pay_time        DATETIME        NULL        COMMENT '支付时间',

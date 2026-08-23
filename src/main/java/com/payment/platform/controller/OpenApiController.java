@@ -54,6 +54,14 @@ public class OpenApiController {
                 response.getWriter().write(params.get("alipayForm"));
             } else if (params.containsKey("mwebUrl")) {
                 response.sendRedirect(params.get("mwebUrl"));
+            } else if (params.containsKey("qrCode")) {
+                // 当面付：兜底展示二维码内容（正常由创建订单接口直接返回 qrCode）
+                response.setContentType("text/html;charset=UTF-8");
+                response.getWriter().write(
+                        "<html><body style='font-family:sans-serif;padding:40px;text-align:center'>"
+                                + "<h2>请使用支付宝扫码支付</h2>"
+                                + "<p style='word-break:break-all;color:#666'>" + params.get("qrCode") + "</p>"
+                                + "</body></html>");
             } else {
                 writeErrorHtml(response, "支付参数缺失");
             }

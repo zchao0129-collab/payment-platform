@@ -67,6 +67,12 @@
             <el-option label="微信" value="WECHAT" />
           </el-select>
         </el-form-item>
+        <el-form-item v-if="testDialog.payChannel === 'ALIPAY'" label="交易类型">
+          <el-select v-model="testDialog.tradeType" style="width:100%">
+            <el-option label="手机网站支付 (WAP)" value="WAP" />
+            <el-option label="当面付 (F2F)" value="F2F" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <div class="test-dialog-footer">
         <el-button @click="testDialog.visible = false">取消</el-button>
@@ -77,12 +83,16 @@
         <div class="result-item">订单号：{{ testDialog.result.orderNo }}</div>
         <div class="result-item">金额：¥{{ fmt(testDialog.result.amount) }}</div>
         <div class="result-item">通道：{{ testDialog.result.payChannel }}</div>
-        <div class="result-item">
+        <div class="result-item">类型：{{ testDialog.result.tradeType === 'F2F' ? '当面付' : '手机网站支付' }}</div>
+        <div v-if="testDialog.result.payUrl" class="result-item">
           支付链接：<a :href="testDialog.result.payUrl" target="_blank" rel="noopener">{{ testDialog.result.payUrl }}</a>
+        </div>
+        <div v-if="testDialog.result.qrCode" class="result-item">
+          二维码内容：<span style="word-break:break-all;color:#666">{{ testDialog.result.qrCode }}</span>
         </div>
         <div v-if="testDialog.qrSrc" class="qr-wrap">
           <img :src="testDialog.qrSrc" alt="支付二维码" />
-          <div class="qr-hint">扫码打开支付链接</div>
+          <div class="qr-hint">{{ testDialog.result.tradeType === 'F2F' ? '顾客用支付宝扫码支付' : '扫码打开支付链接' }}</div>
         </div>
       </div>
     </el-dialog>
@@ -109,6 +119,7 @@ const testDialog = reactive({
   visible: false,
   amount: '1.00',
   payChannel: 'ALIPAY',
+  tradeType: 'WAP',
   loading: false,
   result: null,
   qrSrc: '',
@@ -167,14 +178,17 @@ async function runTestOrder() {
   }
   testDialog.loading = true
   try {
-    const result = await orderApi.adminTestCreate({ amount, payChannel: testDialog.payChannel })
+    const result = await orderApi.adminTestCreate({ amount, payChannel: testDialog.payChannel, tradeType: testDialog.tradeType })
     testDialog.result = result
-    if (result?.payUrl) {
+    const qrContent = result?.payUrl || result?.qrCode
+    if (qrContent) {
       try {
-        testDialog.qrSrc = await qrApi.encodeQrcode(result.payUrl)
+        testDialog.qrSrc = await qrApi.encodeQrcode(qrContent)
       } catch (e) {
         testDialog.qrSrc = ''
       }
+    } else {
+      testDialog.qrSrc = ''
     }
     ElMessage.success('测试订单创建成功')
   } catch (e) {

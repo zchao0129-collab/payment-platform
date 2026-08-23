@@ -5,9 +5,12 @@ import com.alipay.api.AlipayClient;
 import com.alipay.api.CertAlipayRequest;
 import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.domain.AlipayTradeWapPayModel;
+import com.alipay.api.domain.AlipayTradePrecreateModel;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradeWapPayRequest;
+import com.alipay.api.request.AlipayTradePrecreateRequest;
 import com.alipay.api.response.AlipayTradeWapPayResponse;
+import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.payment.platform.common.BusinessException;
 import com.payment.platform.entity.AlipayConfig;
@@ -103,6 +106,46 @@ public class AlipayPaymentServiceImpl implements AlipayPaymentService {
         } catch (AlipayApiException e) {
             log.error("调用支付宝 WAP 支付异常: orderNo={}", orderNo, e);
             throw new BusinessException("创建支付宝支付订单失败: " + e.getErrMsg());
+        }
+    }
+
+    @Override
+    public Map<String, String> buildF2FPay(String orderNo, BigDecimal amount, String subject) {
+        // 1. 获取启用的支付宝配置
+        AlipayConfig cfg = getEnabledConfig();
+        if (cfg == null) {
+            log.warn("没有启用的支付宝配置，无法创建当面付订单");
+            return Map.of("orderNo", orderNo, "qrCode", "");
+        }
+
+        // 2. 根据配置类型创建对应的支付宝客户端
+        AlipayClient alipayClient = createAlipayClient(cfg);
+
+        // 3. 构建当面付预下单请求
+        AlipayTradePrecreateModel model = new AlipayTradePrecreateModel();
+        model.setOutTradeNo(orderNo);
+        model.setTotalAmount(amount.toString());
+        model.setSubject(StringUtils.hasText(subject) ? subject : "扫码支付");
+
+        AlipayTradePrecreateRequest request = new AlipayTradePrecreateRequest();
+        request.setBizModel(model);
+        // 当面付与 WAP 共用同一异步通知地址
+        request.setNotifyUrl(notifyBaseUrl + "/api/alipay/notify");
+
+        // 4. 调用 execute 获取二维码内容（注意：当面付用 execute，不是 pageExecute）
+        try {
+            AlipayTradePrecreateResponse response = alipayClient.execute(request);
+            if (!response.isSuccess()) {
+                log.error("支付宝当面付预下单失败: code={}, msg={}, subMsg={}",
+                        response.getCode(), response.getMsg(), response.getSubMsg());
+                throw new BusinessException("创建当面付订单失败: " + response.getMsg());
+            }
+            String qrCode = response.getQrCode();
+            log.info("支付宝当面付预下单成功: orderNo={}, qrCode={}", orderNo, qrCode);
+            return Map.of("orderNo", orderNo, "qrCode", qrCode != null ? qrCode : "");
+        } catch (AlipayApiException e) {
+            log.error("调用支付宝当面付预下单异常: orderNo={}", orderNo, e);
+            throw new BusinessException("创建当面付订单失败: " + e.getErrMsg());
         }
     }
 
