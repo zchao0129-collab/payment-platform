@@ -26,8 +26,8 @@ public interface MerchantService {
     /** 管理员编辑商户信息（手机号变更时同步关联用户） */
     void adminUpdate(Merchant merchant);
 
-    /** 配置商户开放API（开关/回调地址/IP白名单） */
-    void updateApiConfig(Long merchantId, Integer apiEnabled, String notifyUrl, String ipWhitelist);
+    /** 配置商户开放API（开关/回调地址/IP白名单/金额浮动） */
+    void updateApiConfig(Long merchantId, Integer apiEnabled, String notifyUrl, String ipWhitelist, Integer floatEnabled);
 
     /** 重置商户API密钥并返回新密钥 */
     String resetApiSecret(Long merchantId);

@@ -93,7 +93,8 @@ public class MerchantController {
         merchantService.updateApiConfig(id,
                 params.get("apiEnabled") != null ? Integer.valueOf(params.get("apiEnabled").toString()) : null,
                 (String) params.get("notifyUrl"),
-                (String) params.get("ipWhitelist"));
+                (String) params.get("ipWhitelist"),
+                params.get("floatEnabled") != null ? Integer.valueOf(params.get("floatEnabled").toString()) : null);
         return Result.success("配置成功");
     }
 

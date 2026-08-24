@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS t_merchant (
     notify_url      VARCHAR(256)    DEFAULT ''  COMMENT '支付回调地址',
     api_enabled     TINYINT         DEFAULT 0   COMMENT '是否开通开放API: 0-未开通, 1-已开通',
     ip_whitelist    VARCHAR(512)    DEFAULT ''  COMMENT '调用IP白名单, 逗号分隔, 空=不限',
+    float_enabled   TINYINT         DEFAULT 0   COMMENT '金额浮动: 1-该商户API订单需浮动, 0-不浮动',
     api_secret_updated_at DATETIME  NULL        COMMENT 'API密钥更新时间',
     created_at      DATETIME        DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -109,6 +110,7 @@ CREATE TABLE IF NOT EXISTS t_order (
     order_status    TINYINT         DEFAULT 1   COMMENT '状态: 1-新建, 2-已支付, 3-已回调, 4-已退款, 5-已失效, 6-支付失败',
     pay_channel     VARCHAR(16)     DEFAULT 'ALIPAY' COMMENT '支付通道: ALIPAY, WECHAT',
     trade_type      VARCHAR(16)     DEFAULT 'WAP'  COMMENT '交易类型: WAP-手机网站支付, F2F-当面付(支付宝)',
+    order_source    VARCHAR(16)     DEFAULT 'CASHIER' COMMENT '订单来源: CASHIER-收银台/码牌, OPEN_API-开放API',
     alipay_trade_no VARCHAR(64)     DEFAULT ''  COMMENT '支付宝交易号',
     channel_trade_no VARCHAR(64)    DEFAULT ''  COMMENT '通道交易号(微信/支付宝通用)',
     pay_time        DATETIME        NULL        COMMENT '支付时间',
@@ -252,6 +254,19 @@ CREATE TABLE IF NOT EXISTS t_commission_config (
     updated_at      DATETIME        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='返佣配置表';
 
+-- 订单金额浮动配置表（单行全局配置）
+CREATE TABLE IF NOT EXISTS t_order_amount_config (
+    id              BIGINT          AUTO_INCREMENT PRIMARY KEY,
+    enabled         TINYINT         DEFAULT 1   COMMENT '是否启用: 1-启用, 2-停用',
+    min_float       DECIMAL(10,2)   DEFAULT 0.01 COMMENT '最小浮动金额(元)',
+    max_float       DECIMAL(10,2)   DEFAULT 0.09 COMMENT '最大浮动金额(元)',
+    float_direction VARCHAR(8)      DEFAULT 'BOTH' COMMENT '浮动方向: UP-只上浮, DOWN-只下浮, BOTH-上下随机',
+    judge_mode      VARCHAR(16)     DEFAULT 'MERCHANT' COMMENT '判定主从: MERCHANT-商户为主, URL-跳转/回调地址为主',
+    float_url_keywords VARCHAR(512) DEFAULT '' COMMENT '跳转/回调地址关键字, 逗号分隔',
+    created_at      DATETIME        DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='订单金额浮动配置表';
+
 -- 推荐关系表
 CREATE TABLE IF NOT EXISTS t_referral_relation (
     id                  BIGINT      AUTO_INCREMENT PRIMARY KEY,
@@ -289,3 +304,7 @@ INSERT INTO t_commission_config (min_amount, max_amount, comm_rate, sort_order, 
 (10.01, 50.00, 0.0050, 2, 1),
 (50.01, 200.00, 0.0065, 3, 1),
 (200.01, NULL, 0.0080, 4, 1);
+
+-- 插入默认金额浮动配置（开放API下单金额上下浮动 0.01~0.09 元）
+INSERT INTO t_order_amount_config (id, enabled, min_float, max_float, float_direction, judge_mode, float_url_keywords) VALUES
+(1, 1, 0.01, 0.09, 'BOTH', 'MERCHANT', '');

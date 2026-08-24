@@ -85,10 +85,12 @@
         <div class="result-item">通道：{{ testDialog.result.payChannel }}</div>
         <div class="result-item">类型：{{ testDialog.result.tradeType === 'F2F' ? '当面付' : '手机网站支付' }}</div>
         <div v-if="testDialog.result.payUrl" class="result-item">
-          支付链接：<a :href="testDialog.result.payUrl" target="_blank" rel="noopener">{{ testDialog.result.payUrl }}</a>
-        </div>
-        <div v-if="testDialog.result.qrCode" class="result-item">
-          二维码内容：<span style="word-break:break-all;color:#666">{{ testDialog.result.qrCode }}</span>
+          <template v-if="testDialog.result.tradeType === 'F2F'">
+            二维码内容：<span style="word-break:break-all;color:#666">{{ testDialog.result.payUrl }}</span>
+          </template>
+          <template v-else>
+            支付链接：<a :href="testDialog.result.payUrl" target="_blank" rel="noopener">{{ testDialog.result.payUrl }}</a>
+          </template>
         </div>
         <div v-if="testDialog.qrSrc" class="qr-wrap">
           <img :src="testDialog.qrSrc" alt="支付二维码" />
@@ -180,7 +182,7 @@ async function runTestOrder() {
   try {
     const result = await orderApi.adminTestCreate({ amount, payChannel: testDialog.payChannel, tradeType: testDialog.tradeType })
     testDialog.result = result
-    const qrContent = result?.payUrl || result?.qrCode
+    const qrContent = result?.payUrl
     if (qrContent) {
       try {
         testDialog.qrSrc = await qrApi.encodeQrcode(qrContent)

@@ -119,6 +119,12 @@ const routes = [
         meta: { title: '返佣配置' },
       },
       {
+        path: 'amountfloat',
+        name: 'AdminAmountFloat',
+        component: () => import('@/views/pc/admin/OrderAmountConfigPage.vue'),
+        meta: { title: '金额浮动配置' },
+      },
+      {
         path: 'users',
         name: 'AdminUsers',
         component: () => import('@/views/pc/admin/UsersPage.vue'),
@@ -189,8 +195,10 @@ const router = createRouter({
   routes,
 })
 
+const APP_TITLE = window.__APP_CONFIG__?.appTitle || '支付商户管理平台'
+
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title ? `${to.meta.title} - 支付商户管理平台` : '支付商户管理平台'
+  document.title = to.meta.title ? `${to.meta.title} - ${APP_TITLE}` : APP_TITLE
 
   const isAdminRoute = to.path.startsWith('/admin')
   const isMerchantRoute = to.path.startsWith('/merchant')

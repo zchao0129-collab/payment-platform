@@ -49,6 +49,15 @@ export function deleteCommConfig(id) {
   return request.delete(`/admin/comm-config/${id}`)
 }
 
+// ========== 金额浮动配置 ==========
+export function getOrderAmountConfig() {
+  return request.get('/admin/order-amount-config')
+}
+
+export function saveOrderAmountConfig(data) {
+  return request.put('/admin/order-amount-config', data)
+}
+
 // ========== 用户管理 ==========
 export function getUserList(params) {
   return request.get('/admin/user/list', { params })

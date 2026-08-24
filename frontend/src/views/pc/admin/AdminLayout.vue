@@ -58,6 +58,13 @@
         </div>
         <div
           class="menu-item"
+          :class="{ active: currentRoute === 'amountfloat' }"
+          @click="navigate('amountfloat')"
+        >
+          <span class="icon">🔀</span>金额浮动配置
+        </div>
+        <div
+          class="menu-item"
           :class="{ active: currentRoute === 'users' }"
           @click="navigate('users')"
         >

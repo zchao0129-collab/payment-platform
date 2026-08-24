@@ -1,11 +1,9 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: payment-platform
-  profiles:
-    active: prod
   servlet:
     multipart:
       max-file-size: 5MB
@@ -17,9 +15,9 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://8.149.135.251:3306/payment_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
-    username: payment_platform
-    password: xaKdBBGxNSprBrzw
+    url: ${DB_URL:jdbc:mysql://localhost:3306/payment_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -29,10 +27,10 @@ spring:
 
   data:
     redis:
-      host: 8.149.135.251
-      port: 6379
-      password: Czckiss!@#
-      database: 0
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
       timeout: 3000ms
       lettuce:
         pool:
@@ -54,19 +52,18 @@ mybatis-plus:
 
 # JWT
 jwt:
-  secret: payment-platform-secret-key-must-be-at-least-256-bits-long-for-hs256
+  secret: ${JWT_SECRET:dev-only-secret-change-me-in-production-0123456789abcdef}
   access-token-expire: 86400
   refresh-token-expire: 604800
 
 # 收银台前端地址（用于码牌 URL 生成、支付结果页回跳）
 app:
-  cashier-base-url: https://qrpay.csmmkj.cn
+  cashier-base-url: ${CASHIER_BASE_URL:http://localhost:8080}
   # 开放API对外域名（支付链接 payUrl / 支付完成跳转链接 的拼接基地址），按实际对外域名修改
-  open-api-base-url: https://qrpay.csmmkj.cn
+  open-api-base-url: ${OPEN_API_BASE_URL:http://localhost:8080}
 
 file:
-  upload-path: /home/data/payment-platform/upload   # Linux
-  #upload-path: D:/project/payment-platform/uploadPath     # Windows
+  upload-path: ${UPLOAD_PATH:./upload}
 
 # Knife4j
 knife4j:
@@ -88,26 +85,19 @@ springdoc:
 alipay:
   gateway: https://openapi.alipay.com/gateway.do
   # 支付宝异步通知可达的公网地址（用于 notify_url）
-  notify-base-url: https://qrpay.csmmkj.cn
+  notify-base-url: ${ALIPAY_NOTIFY_BASE_URL:http://localhost:8080}
   # 签名类型
   sign-type: RSA2
 
 # 微信支付配置
 wechat:
   pay-gateway: https://api.mch.weixin.qq.com
-  notify-base-url: https://qrpay.csmmkj.cn
+  notify-base-url: ${WECHAT_NOTIFY_BASE_URL:http://localhost:8080}
 
 # 短信 (placeholder)
 sms:
   provider: aliyun
   aliyun:
-    access-key-id:
-    access-key-secret:
+    access-key-id: ${SMS_ACCESS_KEY_ID:}
+    access-key-secret: ${SMS_ACCESS_KEY_SECRET:}
     sign-name: 支付商户平台
-
-
-#│  角色   │   手机号    │    密码    │
-#├────────┼─────────────┼────────────┤
-#│ 管理员  │ 13800000000 │ admin123   │
-#├────────┼─────────────┼────────────┤
-#│ 商户    │ 13800138002 │ NewPass123 │

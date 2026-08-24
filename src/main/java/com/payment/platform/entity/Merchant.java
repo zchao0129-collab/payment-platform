@@ -54,6 +54,9 @@ public class Merchant {
     /** 调用IP白名单, 逗号分隔, 空=不限 */
     private String ipWhitelist;
 
+    /** 金额浮动: 1-该商户API订单需浮动, 0-不浮动 */
+    private Integer floatEnabled;
+
     private LocalDateTime apiSecretUpdatedAt;
 
     @TableField(fill = FieldFill.INSERT)

@@ -3,7 +3,7 @@ import { ElMessage } from 'element-plus'
 import { getActiveToken, getActiveUserInfo } from '@/stores/user'
 
 const request = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: window.__APP_CONFIG__?.apiBaseUrl || import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 15000,
 })
 

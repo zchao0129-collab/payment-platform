@@ -1,0 +1,59 @@
+# ============================================================
+# 外置配置文件模板
+# 用法：复制本文件为 application.yml，放到 jar 同目录的 config/ 下，
+#       或启动时通过 --spring.config.additional-location=file:./config/application.yml 指定。
+# 敏感信息可用 ${VAR} 引用环境变量，也可直接填明文（生产建议用环境变量）。
+# ============================================================
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/payment_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:payment_platform}
+    password: ${DB_PASSWORD}                    # 建议环境变量注入，勿提交明文
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 30
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 30000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}               # 建议环境变量注入
+      database: ${REDIS_DATABASE:0}
+      timeout: 3000ms
+
+# JWT 密钥（生产必须换成 ≥256-bit 随机串）
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expire: 86400
+  refresh-token-expire: 604800
+
+# 收银台前端地址（码牌二维码指向此域名）
+app:
+  cashier-base-url: https://your-domain.com
+  # 开放API对外域名
+  open-api-base-url: https://your-domain.com
+
+file:
+  upload-path: /data/payment-platform/upload
+
+# 支付宝/微信异步通知可达公网地址
+alipay:
+  gateway: https://openapi.alipay.com/gateway.do
+  notify-base-url: https://your-domain.com
+  sign-type: RSA2
+
+wechat:
+  pay-gateway: https://api.mch.weixin.qq.com
+  notify-base-url: https://your-domain.com
+
+# 生产环境关闭 SQL 日志
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl

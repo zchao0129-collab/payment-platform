@@ -30,6 +30,13 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column label="金额浮动" width="90">
+          <template #default="{ row }">
+            <span class="tag" :class="row.floatEnabled === 1 ? 'tag-green' : 'tag-gray'" style="cursor:pointer" @click="toggleFloat(row)">
+              {{ row.floatEnabled === 1 ? '浮动' : '不浮动' }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="270">
           <template #default="{ row }">
             <a href="#" @click.prevent="openEdit(row)">编辑</a>
@@ -198,6 +205,17 @@ async function toggleApi(row) {
     await updateApiConfig(row.id, { apiEnabled: newVal })
     row.apiEnabled = newVal
     ElMessage.success(newVal === 1 ? '已开通开放API' : '已关闭开放API')
+  } catch (e) {
+    // 错误已由拦截器提示
+  }
+}
+
+async function toggleFloat(row) {
+  const newVal = row.floatEnabled === 1 ? 0 : 1
+  try {
+    await updateApiConfig(row.id, { floatEnabled: newVal })
+    row.floatEnabled = newVal
+    ElMessage.success(newVal === 1 ? '已开启金额浮动' : '已关闭金额浮动')
   } catch (e) {
     // 错误已由拦截器提示
   }

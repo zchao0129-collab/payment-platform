@@ -8,6 +8,7 @@ import com.payment.platform.common.utils.CodeGenerator;
 import com.payment.platform.dto.req.OrderQueryReq;
 import com.payment.platform.entity.*;
 import com.payment.platform.enums.AlipayTradeTypeEnum;
+import com.payment.platform.enums.OrderSourceEnum;
 import com.payment.platform.enums.OrderStatusEnum;
 import com.payment.platform.mapper.*;
 import com.payment.platform.service.AlipayPaymentService;
@@ -63,6 +64,8 @@ public class OrderServiceImpl implements OrderService {
         order.setExpireTime(LocalDateTime.now().plusMinutes(5));
         order.setQrcodeId(qrcodeId);
         order.setRemark(remark);
+        // 默认订单来源为收银台/码牌；开放API下单会在调用方覆盖为 OPEN_API
+        order.setOrderSource(OrderSourceEnum.CASHIER.getCode());
         orderMapper.insert(order);
         log.info("订单创建: orderNo={}, amount={}", order.getOrderNo(), amount);
         return order;

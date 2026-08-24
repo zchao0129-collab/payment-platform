@@ -48,6 +48,10 @@ nbdist/
 *.zip
 *.docx
 frontend/部署包_staging/
+release/
+deploy/config/application.yml
+deploy/backend/app.jar
+deploy/backend/logs/
 
 !*/build/*.java
 !*/build/*.html

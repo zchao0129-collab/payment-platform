@@ -170,7 +170,7 @@ public class MerchantServiceImpl implements MerchantService {
     }
 
     @Override
-    public void updateApiConfig(Long merchantId, Integer apiEnabled, String notifyUrl, String ipWhitelist) {
+    public void updateApiConfig(Long merchantId, Integer apiEnabled, String notifyUrl, String ipWhitelist, Integer floatEnabled) {
         Merchant db = getById(merchantId);
         if (apiEnabled != null) {
             db.setApiEnabled(apiEnabled);
@@ -181,8 +181,11 @@ public class MerchantServiceImpl implements MerchantService {
         if (ipWhitelist != null) {
             db.setIpWhitelist(ipWhitelist);
         }
+        if (floatEnabled != null) {
+            db.setFloatEnabled(floatEnabled);
+        }
         merchantMapper.updateById(db);
-        log.info("商户开放API配置更新: id={}, apiEnabled={}", merchantId, apiEnabled);
+        log.info("商户开放API配置更新: id={}, apiEnabled={}, floatEnabled={}", merchantId, apiEnabled, floatEnabled);
     }
 
     @Override

@@ -31,6 +31,9 @@ public class Order {
     /** 交易类型: WAP-手机网站支付, F2F-当面付(支付宝)；微信可传 JSAPI/H5 */
     private String tradeType;
 
+    /** 订单来源: CASHIER-收银台/码牌, OPEN_API-开放API */
+    private String orderSource;
+
     private String alipayTradeNo;
 
     /** 通道交易号 (支付宝/微信通用) */

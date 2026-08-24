@@ -22,6 +22,7 @@
         <result column="notify_url" property="notifyUrl"/>
         <result column="api_enabled" property="apiEnabled"/>
         <result column="ip_whitelist" property="ipWhitelist"/>
+        <result column="float_enabled" property="floatEnabled"/>
         <result column="api_secret_updated_at" property="apiSecretUpdatedAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -30,7 +31,7 @@
     <sql id="Base_Column_List">
         id, merchant_no, merchant_name, phone, alipay_account, real_name, id_card_no, password, salt,
         referral_code, parent_referral, status, login_lock_until, login_fail_count,
-        api_secret, notify_url, api_enabled, ip_whitelist, api_secret_updated_at,
+        api_secret, notify_url, api_enabled, ip_whitelist, float_enabled, api_secret_updated_at,
         created_at, updated_at
     </sql>
 

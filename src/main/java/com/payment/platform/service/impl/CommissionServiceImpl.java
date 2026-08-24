@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.payment.platform.common.BusinessException;
 import com.payment.platform.common.utils.CodeGenerator;
 import com.payment.platform.entity.*;
+import com.payment.platform.enums.OrderSourceEnum;
 import com.payment.platform.enums.OrderStatusEnum;
 import com.payment.platform.enums.WithdrawStatusEnum;
 import com.payment.platform.mapper.*;
@@ -104,9 +105,11 @@ public class CommissionServiceImpl implements CommissionService {
             if (lock.tryLock(10, 60, TimeUnit.SECONDS)) {
                 try {
                     // 查询所有已支付、待生成佣金的订单（PAID 而非 CALLBACK，因为回调仅设置 PAID 状态）
+                    // 排除开放API下单的订单（外部接口调用创建的订单不计算佣金）
                     List<Order> orders = orderMapper.selectList(
                             new LambdaQueryWrapper<Order>()
                                     .eq(Order::getOrderStatus, OrderStatusEnum.PAID.getCode())
+                                    .ne(Order::getOrderSource, OrderSourceEnum.OPEN_API.getCode())
                                     .last("LIMIT 1000"));
                     if (orders.isEmpty()) {
                         log.info("无待结算佣金订单");
@@ -222,6 +225,10 @@ public class CommissionServiceImpl implements CommissionService {
     }
 
     private void generateCommissionForOrder(Order order) {
+        // 开放API下单的订单不计算佣金（双重保险，防止其它调用路径漏判）
+        if (OrderSourceEnum.isOpenApi(order.getOrderSource())) {
+            return;
+        }
         // 检查是否已生成
         if (commissionMapper.selectCount(
                 new LambdaQueryWrapper<Commission>().eq(Commission::getOrderId, order.getId())) > 0) {

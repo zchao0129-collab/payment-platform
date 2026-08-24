@@ -7,11 +7,13 @@ import com.payment.platform.dto.req.OpenOrderQueryReq;
 import com.payment.platform.entity.Merchant;
 import com.payment.platform.entity.Order;
 import com.payment.platform.enums.AlipayTradeTypeEnum;
+import com.payment.platform.enums.OrderSourceEnum;
 import com.payment.platform.enums.OrderStatusEnum;
 import com.payment.platform.mapper.MerchantMapper;
 import com.payment.platform.mapper.OrderMapper;
 import com.payment.platform.service.AlipayPaymentService;
 import com.payment.platform.service.OpenApiService;
+import com.payment.platform.service.OrderAmountConfigService;
 import com.payment.platform.service.OrderService;
 import com.payment.platform.service.WechatPaymentService;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,7 @@ public class OpenApiServiceImpl implements OpenApiService {
     private final OrderService orderService;
     private final AlipayPaymentService alipayPaymentService;
     private final WechatPaymentService wechatPaymentService;
+    private final OrderAmountConfigService orderAmountConfigService;
 
     @Value("${app.open-api-base-url}")
     private String openApiBaseUrl;
@@ -61,13 +64,19 @@ public class OpenApiServiceImpl implements OpenApiService {
         }
 
         String productName = StringUtils.hasText(req.getProductName()) ? req.getProductName() : "扫码支付";
+        // 开放API下单金额浮动：先按「判定主从」判断是否需要浮动，需要时再做上下浮动（默认 0.01~0.09 元）
         BigDecimal amount = new BigDecimal(req.getAmount());
+        if (orderAmountConfigService.shouldFloat(merchant, req.getReturnUrl(), req.getNotifyUrl())) {
+            amount = orderAmountConfigService.applyFloat(amount);
+        }
         String payChannel = StringUtils.hasText(req.getPayChannel()) ? req.getPayChannel().toUpperCase() : "ALIPAY";
         String tradeType = StringUtils.hasText(req.getTradeType()) ? req.getTradeType().toUpperCase() : "WAP";
 
         Order order = orderService.createOrder(merchant.getId(), productName, amount, null, req.getRemark());
         order.setPayChannel(payChannel);
         order.setTradeType(tradeType);
+        // 开放API下单的订单不参与佣金计算
+        order.setOrderSource(OrderSourceEnum.OPEN_API.getCode());
         if (StringUtils.hasText(req.getNotifyUrl())) {
             order.setNotifyUrl(req.getNotifyUrl());
         }
@@ -84,7 +93,7 @@ public class OpenApiServiceImpl implements OpenApiService {
         if (AlipayTradeTypeEnum.isF2F(tradeType)) {
             // 当面付：直接返回二维码内容，商户展示给顾客用支付宝 App 扫
             Map<String, String> f2f = alipayPaymentService.buildF2FPay(order.getOrderNo(), amount, productName);
-            result.put("qrCode", f2f.getOrDefault("qrCode", ""));
+            result.put("payUrl", f2f.getOrDefault("qrCode", ""));
         } else {
             result.put("payUrl", openApiBaseUrl + "/api/open/pay/" + order.getOrderNo());
         }
@@ -133,7 +142,7 @@ public class OpenApiServiceImpl implements OpenApiService {
         } else if (AlipayTradeTypeEnum.isF2F(order.getTradeType())) {
             Map<String, String> f2f = alipayPaymentService.buildF2FPay(
                     orderNo, order.getOrderAmount(), order.getProductName());
-            result.put("qrCode", f2f.getOrDefault("qrCode", ""));
+            result.put("payUrl", f2f.getOrDefault("qrCode", ""));
         } else {
             Map<String, String> alipay = alipayPaymentService.buildWapPay(
                     orderNo, order.getOrderAmount(), order.getProductName(), returnUrl);
