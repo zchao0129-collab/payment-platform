@@ -14,6 +14,7 @@
         <result column="pay_channel" property="payChannel"/>
         <result column="alipay_trade_no" property="alipayTradeNo"/>
         <result column="channel_trade_no" property="channelTradeNo"/>
+        <result column="merchant_order_no" property="merchantOrderNo"/>
         <result column="pay_time" property="payTime"/>
         <result column="callback_time" property="callbackTime"/>
         <result column="refund_time" property="refundTime"/>
@@ -33,7 +34,7 @@
 
     <sql id="Base_Column_List">
         id, order_no, merchant_id, merchant_no, product_name, order_amount,
-        order_status, pay_channel, alipay_trade_no, channel_trade_no,
+        order_status, pay_channel, alipay_trade_no, channel_trade_no, merchant_order_no,
         pay_time, callback_time, refund_time,
         refund_amount, expire_time, fail_reason, qrcode_id, remark,
         notify_url, return_url, notify_status, notify_count, notify_time,

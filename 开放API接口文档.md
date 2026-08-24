@@ -75,6 +75,7 @@ sign = 6880A402994418EC0F633F511E26BC8C
 | sign | string | 是 | 签名 |
 | productName | string | 否 | 商品名称，默认「扫码支付」 |
 | amount | string | 是 | 金额，单位元，如 `100.00` |
+| merchantOrderNo | string | 否 | 上游商户订单号，用于对账/查单 |
 | payChannel | string | 否 | `ALIPAY` / `WECHAT`，默认 `ALIPAY` |
 | tradeType | string | 否 | 支付宝交易类型：`WAP`（手机网站支付，默认）/ `F2F`（当面付）；微信通道忽略 |
 | notifyUrl | string | 否 | 异步回调地址，覆盖商户默认 |
@@ -91,6 +92,7 @@ sign = 6880A402994418EC0F633F511E26BC8C
   "sign": "6880A402994418EC0F633F511E26BC8C",
   "productName": "测试商品",
   "amount": "100.00",
+  "merchantOrderNo": "MCH202608220001",
   "payChannel": "ALIPAY",
   "notifyUrl": "https://mch.example.com/notify",
   "returnUrl": "https://mch.example.com/result"
@@ -155,7 +157,7 @@ sign = 6880A402994418EC0F633F511E26BC8C
 
 `POST {BASE}/api/open/order/query`
 
-**请求体：**（公共参数 + `orderNo`）
+**请求体：**（公共参数 + `orderNo` 或 `merchantOrderNo`，二者**二选一**）
 
 ```json
 {
@@ -175,6 +177,7 @@ sign = 6880A402994418EC0F633F511E26BC8C
   "msg": "success",
   "data": {
     "orderNo": "ORD2026082212345",
+    "merchantOrderNo": "MCH202608220001",
     "orderStatus": 2,
     "orderAmount": "100.00",
     "payChannel": "ALIPAY",
@@ -215,6 +218,7 @@ sign = 6880A402994418EC0F633F511E26BC8C
 ```json
 {
   "orderNo": "ORD2026082212345",
+  "merchantOrderNo": "MCH202608220001",
   "merchantNo": "M202608221234",
   "orderStatus": 2,
   "amount": "100.00",

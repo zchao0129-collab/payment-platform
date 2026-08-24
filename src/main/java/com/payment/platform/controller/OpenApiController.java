@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ import java.util.Map;
  * 下单/查询需在请求体携带 appId/timestamp/nonce/sign，由 ApiSignFilter 统一验签；
  * 支付链接 /pay/{orderNo} 与跳转链接 /redirect/{orderNo} 由浏览器直接打开，无需验签。
  */
+@Slf4j
 @Tag(name = "开放API", description = "外部商户调用接口")
 @RestController
 @RequestMapping("/api/open")
@@ -33,13 +35,19 @@ public class OpenApiController {
     @Operation(summary = "创建订单（返回支付链接）")
     @PostMapping("/order/create")
     public Result<Map<String, Object>> createOrder(@RequestBody OpenOrderCreateReq req) {
-        return Result.ok(openApiService.createOrder(req));
+        log.info("[开放API] 创建订单入参: {}", req);
+        Map<String, Object> data = openApiService.createOrder(req);
+        log.info("[开放API] 创建订单出参: {}", data);
+        return Result.ok(data);
     }
 
     @Operation(summary = "查询订单")
     @PostMapping("/order/query")
     public Result<Map<String, Object>> queryOrder(@RequestBody OpenOrderQueryReq req) {
-        return Result.ok(openApiService.queryOrder(req));
+        log.info("[开放API] 查询订单入参: {}", req);
+        Map<String, Object> data = openApiService.queryOrder(req);
+        log.info("[开放API] 查询订单出参: {}", data);
+        return Result.ok(data);
     }
 
     @Operation(summary = "支付链接（浏览器直接打开）")

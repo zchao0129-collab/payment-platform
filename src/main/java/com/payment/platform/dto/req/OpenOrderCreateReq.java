@@ -28,6 +28,9 @@ public class OpenOrderCreateReq {
     /** 金额，单位元，字符串 */
     private String amount;
 
+    /** 上游商户订单号（可选，用于对账/查单） */
+    private String merchantOrderNo;
+
     /** 支付通道: ALIPAY / WECHAT，默认 ALIPAY */
     private String payChannel;
 

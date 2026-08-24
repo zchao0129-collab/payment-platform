@@ -18,6 +18,9 @@ public class Order {
 
     private String merchantNo;
 
+    /** 上游商户订单号（外部商户系统传入，用于对账/查单） */
+    private String merchantOrderNo;
+
     private String productName;
 
     private java.math.BigDecimal orderAmount;

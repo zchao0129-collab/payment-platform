@@ -83,6 +83,9 @@ public class OpenApiServiceImpl implements OpenApiService {
         if (StringUtils.hasText(req.getReturnUrl())) {
             order.setReturnUrl(req.getReturnUrl());
         }
+        if (StringUtils.hasText(req.getMerchantOrderNo())) {
+            order.setMerchantOrderNo(req.getMerchantOrderNo());
+        }
         orderMapper.updateById(order);
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -104,10 +107,16 @@ public class OpenApiServiceImpl implements OpenApiService {
 
     @Override
     public Map<String, Object> queryOrder(OpenOrderQueryReq req) {
-        Order order = orderMapper.selectOne(
-                new LambdaQueryWrapper<Order>()
-                        .eq(Order::getOrderNo, req.getOrderNo())
-                        .last("LIMIT 1"));
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
+                .eq(Order::getMerchantNo, req.getAppId());
+        if (StringUtils.hasText(req.getOrderNo())) {
+            wrapper.eq(Order::getOrderNo, req.getOrderNo());
+        } else if (StringUtils.hasText(req.getMerchantOrderNo())) {
+            wrapper.eq(Order::getMerchantOrderNo, req.getMerchantOrderNo());
+        } else {
+            throw new BusinessException("orderNo 与 merchantOrderNo 至少传一个");
+        }
+        Order order = orderMapper.selectOne(wrapper.last("LIMIT 1"));
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
@@ -116,6 +125,7 @@ public class OpenApiServiceImpl implements OpenApiService {
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("orderNo", order.getOrderNo());
+        result.put("merchantOrderNo", order.getMerchantOrderNo());
         result.put("orderStatus", order.getOrderStatus());
         result.put("orderAmount", order.getOrderAmount().toString());
         result.put("payChannel", order.getPayChannel());

@@ -21,4 +21,7 @@ public class OpenOrderQueryReq {
     private String sign;
 
     private String orderNo;
+
+    /** 上游商户订单号（可选，与 orderNo 二选一） */
+    private String merchantOrderNo;
 }

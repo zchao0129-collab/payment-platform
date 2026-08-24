@@ -151,24 +151,49 @@ public class AlipayPaymentServiceImpl implements AlipayPaymentService {
 
     @Override
     public boolean verifyNotifySign(Map<String, String> params) {
-        AlipayConfig cfg = getEnabledConfig();
-        if (cfg == null) {
-            log.error("验签失败: 没有启用的支付宝配置");
+        // 回调参数里的 app_id 是发起支付的那个支付宝应用，据此精确定位到对应配置。
+        // 不能再用 getEnabledConfig() 按权重随机选——多配置共存时随机选会验签失败/异常。
+        String appId = params.get("app_id");
+        if (!StringUtils.hasText(appId)) {
+            log.error("验签失败: 回调参数缺少 app_id, params={}", params);
             return false;
         }
+        AlipayConfig cfg = getEnabledConfigByAppId(appId);
+        if (cfg == null) {
+            log.error("验签失败: 未找到 app_id={} 对应的启用配置", appId);
+            return false;
+        }
+        return verifySign(cfg, params);
+    }
+
+    /** 用指定配置对回调参数验签 */
+    private boolean verifySign(AlipayConfig cfg, Map<String, String> params) {
         try {
             if (cfg.getConfigType() != null && cfg.getConfigType() == TYPE_CERT) {
-                // 证书模式验签
-                String alipayCertContent = readCertContent(cfg.getRootCertPath());
-                return AlipaySignature.rsaCertCheckV1(params, alipayCertContent, CHARSET, signType);
+                // 证书模式验签：需「支付宝公钥证书」内容（此前误传根证书，导致验签异常）
+                log.info("创建支付宝客户端 [证书模式]: appId={}", cfg.getAppId());
+                String alipayPublicCert = uploadPath+"/"+cfg.getPublicCertPath();
+                log.info("创建支付宝客户端 [证书模式]: alipayPublicCert={}", alipayPublicCert);
+                return AlipaySignature.certVerifyV1(params, alipayPublicCert, CHARSET, signType);
             } else {
-                // 秘钥模式验签
+                // 秘钥模式验签：用「支付宝公钥」
+                log.info("创建支付宝客户端 [秘钥模式验签]: appId={}", cfg.getAppId());
                 return AlipaySignature.rsaCheckV1(params, cfg.getAlipayPublicKey(), CHARSET, signType);
             }
         } catch (Exception e) {
-            log.error("验签异常: configType={}", cfg.getConfigType(), e);
+            log.error("验签异常: configId={}, appId={}, configType={}, cause={}",
+                    cfg.getId(), cfg.getAppId(), cfg.getConfigType(), e.getMessage(), e);
             return false;
         }
+    }
+
+    /** 按 app_id 精确查找启用的支付宝配置 */
+    private AlipayConfig getEnabledConfigByAppId(String appId) {
+        List<AlipayConfig> configs = alipayConfigMapper.selectList(
+                new LambdaQueryWrapper<AlipayConfig>()
+                        .eq(AlipayConfig::getAppId, appId)
+                        .eq(AlipayConfig::getStatus, 1));
+        return configs.isEmpty() ? null : configs.get(0);
     }
 
     @Override
@@ -252,7 +277,9 @@ public class AlipayPaymentServiceImpl implements AlipayPaymentService {
         if (!StringUtils.hasText(relativePath)) {
             throw new BusinessException("证书路径未配置");
         }
-        Path certFile = Paths.get(uploadPath, relativePath);
+        // 兼容 DB 中带前导 "/" 的路径（如 /certs/xxx.crt），统一按 uploadPath 下的相对路径解析
+        String normalized = relativePath.startsWith("/") ? relativePath.substring(1) : relativePath;
+        Path certFile = Paths.get(uploadPath, normalized);
         if (!Files.exists(certFile)) {
             log.error("证书文件不存在: {}", certFile);
             throw new BusinessException("证书文件不存在: " + relativePath);

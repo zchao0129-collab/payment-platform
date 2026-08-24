@@ -142,6 +142,7 @@ public class AlipayNotifyController {
                         .in(Order::getOrderStatus, OrderStatusEnum.NEW.getCode(), OrderStatusEnum.PAID.getCode())
                         .set(Order::getOrderStatus, OrderStatusEnum.PAID.getCode())
                         .set(Order::getAlipayTradeNo, tradeNo)
+                        .set(Order::getChannelTradeNo, tradeNo)
                         .set(Order::getPayTime, LocalDateTime.now()));
 
         // 推送商户回调

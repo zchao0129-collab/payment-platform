@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS t_order (
     order_source    VARCHAR(16)     DEFAULT 'CASHIER' COMMENT '订单来源: CASHIER-收银台/码牌, OPEN_API-开放API',
     alipay_trade_no VARCHAR(64)     DEFAULT ''  COMMENT '支付宝交易号',
     channel_trade_no VARCHAR(64)    DEFAULT ''  COMMENT '通道交易号(微信/支付宝通用)',
+    merchant_order_no VARCHAR(64)   DEFAULT ''  COMMENT '上游商户订单号',
     pay_time        DATETIME        NULL        COMMENT '支付时间',
     callback_time   DATETIME        NULL        COMMENT '回调时间',
     refund_time     DATETIME        NULL        COMMENT '退款时间',
@@ -131,7 +132,9 @@ CREATE TABLE IF NOT EXISTS t_order (
     UNIQUE KEY uk_order_no (order_no),
     KEY idx_merchant_id (merchant_id),
     KEY idx_merchant_no (merchant_no),
-    KEY idx_created_at (created_at)
+    KEY idx_merchant_order_no (merchant_order_no),
+    KEY idx_created_at (created_at),
+    KEY idx_notify_retry (order_source, order_status, notify_status, notify_count)
 ) ENGINE=InnoDB COMMENT='订单表';
 
 -- 支付日志表
