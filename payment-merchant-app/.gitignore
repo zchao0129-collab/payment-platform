@@ -9,10 +9,8 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 
 frontend/node_modules/
-frontend/dist/
 uploadPath/
-payment-merchant-app/node_modules/
-payment-merchant-app/dist/
+frontend/dist/
 ######################################################################
 # IDE
 
@@ -45,15 +43,6 @@ nbdist/
 *.log
 *.xml.versionsBackup
 *.swp
-
-# 构建/部署产物（不入库）
-*.zip
-*.docx
-frontend/部署包_staging/
-release/
-deploy/config/application.yml
-deploy/backend/app.jar
-deploy/backend/logs/
 
 !*/build/*.java
 !*/build/*.html

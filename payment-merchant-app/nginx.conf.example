@@ -1,0 +1,51 @@
+# 支付商户端 H5 部署 — Nginx 配置示例
+# 请将 server_name / root / proxy_pass 替换为实际的域名、目录与后端地址
+
+server {
+    listen 80;
+    server_name qrpay.csmmkj.cn;           # H5 实际域名（与后端同域，见下方说明）
+
+    root /var/www/payment-merchant-h5;     # 指向 html 目录（部署包解压后的 html/）
+    index index.html;
+
+    charset utf-8;
+
+    # ⚠ 注意：不要在 server{} 里写 types{} 块！
+    # nginx 的 types 指令在 server/location 里会【覆盖】http{} 继承来的 include mime.types 映射，
+    # 导致 html/js/png 等全部回落到 default_type（application/octet-stream），
+    # 浏览器会把这些文件当下载而非渲染。
+    # 请确保 nginx.conf 的 http{} 里保留默认的这行即可（现代 mime.types 已含 ttf/woff/woff2 等字体类型）：
+    #     include       mime.types;
+
+    # 长缓存：带 hash 的静态资源
+    location /_expo/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+    location /assets/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 后端 API 反向代理（H5 使用相对路径 /api，同域部署，无需 CORS）
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # SPA 路由回退：所有非文件请求回落到 index.html（必须）
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+# 说明：
+# 1. H5 前端接口地址为相对路径 /api，经上面的 location /api/ 反代到后端，
+#    与后端同域部署，因此【无需 CORS 配置】。
+# 2. 资源已使用相对路径（./_expo/、./assets/），可部署在根路径或子目录；
+#    若放子目录，把 root 指向该子目录对应的实际目录即可。
+# 3. 若后端部署在另一台服务器，把 proxy_pass 的 127.0.0.1:8080 换成后端内网地址即可。

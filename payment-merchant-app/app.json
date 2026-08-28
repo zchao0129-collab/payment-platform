@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "支付商户端",
+    "slug": "payment-merchant-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#00B464"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "experiments": {
+      "baseUrl": "./"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.payment.merchant.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "用于保存码牌图片到相册",
+        "NSPhotoLibraryAddUsageDescription": "用于保存码牌图片到相册"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#00B464"
+      },
+      "package": "com.payment.merchant.app",
+      "versionCode": 1,
+      "permissions": [
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
