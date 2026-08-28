@@ -112,11 +112,18 @@ async function handleLogin() {
 }
 
 .admin-auth-page .auth-card {
-  width: 420px;
+  width: 92%;
+  max-width: 420px;
   background: #fff;
   border-radius: 12px;
   padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .admin-auth-page .auth-card {
+    padding: 24px 18px;
+  }
 }
 
 .admin-auth-page .auth-card h2 {
@@ -141,6 +148,7 @@ async function handleLogin() {
 .captcha-area {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 12px;
   background: #fafafa;

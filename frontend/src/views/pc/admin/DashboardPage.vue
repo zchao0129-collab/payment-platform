@@ -28,7 +28,7 @@
 
     <!-- 曲线图 -->
     <div style="display:flex;gap:16px;flex-wrap:wrap">
-      <div class="card" style="flex:1;min-width:320px">
+      <div class="card" style="flex:1;min-width:min(320px,100%)">
         <div class="card-header">
           本周营收曲线
           <span class="chart-legend">
@@ -50,7 +50,7 @@
         <div v-else style="text-align:center;color:#bbb;padding:24px">暂无数据</div>
       </div>
 
-      <div class="card" style="flex:1;min-width:320px">
+      <div class="card" style="flex:1;min-width:min(320px,100%)">
         <div class="card-header">
           本月营收曲线
           <span class="chart-legend">
@@ -75,7 +75,7 @@
 
     <!-- Rankings -->
     <div style="display:flex;gap:16px;flex-wrap:wrap">
-      <div class="card" style="flex:1;min-width:320px">
+      <div class="card" style="flex:1;min-width:min(320px,100%)">
         <div class="card-header">订单排行 TOP5</div>
         <el-table :data="orderRank" stripe>
           <el-table-column label="排名" width="70">
@@ -88,7 +88,7 @@
           </el-table-column>
         </el-table>
       </div>
-      <div class="card" style="flex:1;min-width:320px">
+      <div class="card" style="flex:1;min-width:min(320px,100%)">
         <div class="card-header">提现排行 TOP5</div>
         <el-table :data="withdrawRank" stripe>
           <el-table-column label="排名" width="70">

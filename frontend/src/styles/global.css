@@ -360,4 +360,47 @@ a {
   .search-bar {
     flex-direction: column;
   }
+  .content {
+    padding: 12px;
+  }
+  .header {
+    padding: 0 12px;
+  }
+  .page-title {
+    font-size: 17px;
+    margin-bottom: 14px;
+  }
+  /* 移动端弹窗/确认框自适应，覆盖写死的固定宽度 */
+  .el-dialog {
+    --el-dialog-width: 92%;
+    width: 92% !important;
+    max-width: 92vw;
+  }
+  .el-message-box {
+    width: 92% !important;
+    max-width: 92vw;
+  }
+  /* 移动端表单标签置顶，避免固定 label-width 挤压输入框 */
+  .el-form-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .el-form-item__label {
+    width: auto !important;
+    text-align: left;
+    margin-bottom: 4px;
+  }
+}
+
+/* ========== 管理端移动抽屉 ========== */
+.admin-mobile-drawer .el-drawer__body {
+  padding: 0;
+  overflow-y: auto;
+}
+/* 抽屉内复用 .sidebar 的样式，但移动端媒体查询会把 .sidebar 置为 display:none，
+   这里用更高特异性恢复显示，否则抽屉打开是空白 */
+.admin-mobile-drawer .sidebar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
