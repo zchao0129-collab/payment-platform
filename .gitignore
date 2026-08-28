@@ -13,6 +13,7 @@ frontend/dist/
 uploadPath/
 payment-merchant-app/node_modules/
 payment-merchant-app/dist/
+payment-merchant-app/.expo/
 ######################################################################
 # IDE
 
